@@ -203,6 +203,14 @@ xcrun clang -Wall -Wextra -Werror -Iinternal/platform/ios \
 .nitenphone/build/checks/common/test_touch_layout
 ```
 
+When the app-language mapping changes, run the language check:
+
+```sh
+xcrun clang -Wall -Wextra -Werror -Iinternal/runtime/common \
+  internal/tests/common/test_language.c -o .nitenphone/build/checks/common/test_language
+.nitenphone/build/checks/common/test_language
+```
+
 `test_world_projection.py` is a v0 regression test. Its default `.nitenphone/work/silksong/phone-features/` path is a compatibility link to the retained v0 modules. An explicit command is `.nitenphone/venv/bin/python internal/games/silksong/tests/test_world_projection.py --modules .nitenphone/work/silksong/patched`. Do not count it as v655360 projection evidence. New camera changes need checks for the exact active module layout.
 
 ## Generate, build, and package the iPhone or iPad app

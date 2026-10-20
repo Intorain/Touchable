@@ -1,5 +1,23 @@
 # Rhythm Heaven
 
+## 2026-10-20: Simplified Chinese per-app language (build 35)
+
+The system stores an app language with a region. Hong Kong uses tags such as `zh-Hans-HK` and `zh-Hant-HK`.
+The old language mapping treated every `HK` tag as Traditional Chinese. It ignored the `Hans` script.
+Thus the app stayed in Traditional Chinese when the user selected Simplified Chinese.
+The mapping now reads the script first. A region selects the script only when the tag has no script.
+The app reads `AppleLanguages` first. It then reads the bundle localizations and `NSLocale.preferredLanguages`.
+The game log records all three values.
+The new `internal/tests/common/test_language.c` passes. The `App.m` syntax check has only the existing warnings.
+The 48 Python tests pass.
+Build 35 reuses the build 34 patched modules, shaders, and RomFS. The source NSP is not in this copy.
+The local build used the reused shader chain `98bab944ce89`. This tree keeps its generated `525103439d46` chain.
+The device build succeeded.
+The IPA is unsigned. Use PlayCover or a signing tool before installation.
+The IPA is `IPA/rhythm-heaven/RhythmHeaven-build35-language-20261020.ipa`.
+The SHA-256 is `eeafd2560a91e419b03d771fae47bc36b4cc7739110c57876aca2c2f20bf7c83`.
+No device test was run.
+
 ## 2026-10-19: System glass press effect (build 34)
 
 In a Silksong session, the user asked for the glass effect of the touch buttons to match the official Apple buttons.
@@ -288,12 +306,13 @@ The records below do not include the short start check after this reorganization
 | Active content | `.nitenphone/work/rhythm-heaven/base/` |
 | Active modules | `.nitenphone/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
 | Graphics | 1920×1080, NVN to Metal, 35 shader stages |
-| iPad/iPhone app | Build 34 (not installed. The iPhone has build 30, the iPad mini has build 27), Bundle ID `com.mmmz.NitenphoneSilksong` |
+| iPad/iPhone app | Build 35 (unsigned, not installed. The iPhone has build 30, the iPad mini has build 27), Bundle ID `com.mmmz.NitenphoneSilksong` |
 | Phone save | `Documents/Saves/RhythmHeaven` |
 | Play record | Multiple rhythm games, some Remixes, menus, and save read/write are recorded. The full play-through is not verified |
 | Direct touch | Normal lists, the map, pause options, the rhythm archive, the music room, and demo videos |
 | Save check | After build 29 was installed on the iPhone, the 3 files matched the backup. After the build 15 recheck, both saves kept 80 P modes |
 
+Build 35 fixes the Simplified Chinese per-app language mapping. Build 35 is unsigned and not installed.
 Build 34 uses the system glass press effect. Build 33 declares Game Mode and stays at 60 Hz. Build 32 makes the transition between the picture edge and the letterbox border smoother. Build 31 makes the letterbox border follow the picture faster (time constant 0.06 seconds). None of these builds is installed on a device yet.
 Build 30 rewrites the border glow. It passed unit tests and the offline render comparison. The user ran it on the iPhone.
 Build 29 fixes the performance and touch controls of BeatSpell. It passed the Mac host and Simulator checks and is installed on the iPhone. BeatSpell on the iPhone is not confirmed yet.
