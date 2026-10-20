@@ -57,7 +57,7 @@ static void noteControllerKeys(uint64_t keys) {
 }
 
 static NSString *gameName(void) {
-    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: @"Nitenphone";
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: @"Touchable";
 }
 
 void *front_metal_layer(void) { return (__bridge void *)gameLayer; }
@@ -696,7 +696,7 @@ static NSString *buttonSymbol(int button) {
 @end
 
 static NSString *touchLayout(void) {
-    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenTouchLayout"] ?: @"switch";
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableTouchLayout"] ?: @"switch";
 }
 
 /* Return the displayed game rectangle. Present uses the same 16:9 fit. */
@@ -721,7 +721,7 @@ static CGRect gameRect(CGSize size) {
 @end
 
 static void *runGame(void *unused) {
-    @autoreleasepool { pthread_setname_np("Nitenphone main"); ss_host_run(moduleDirectory.fileSystemRepresentation); }
+    @autoreleasepool { pthread_setname_np("Touchable main"); ss_host_run(moduleDirectory.fileSystemRepresentation); }
     return NULL;
 }
 
@@ -1002,7 +1002,7 @@ static void *runGame(void *unused) {
     self.metalView.frame = self.view.bounds;
     self.pointerView.frame = self.view.bounds;
     gameLayer.drawableSize = CGSizeMake(render.width, render.height);
-    if ([[NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenNativeDrawable"] boolValue]) {
+    if ([[NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableNativeDrawable"] boolValue]) {
         CGFloat scale = self.view.window.windowScene.screen.nativeScale ?: self.traitCollection.displayScale;
         gameLayer.drawableSize = CGSizeMake(round(size.width * scale), round(size.height * scale));
     }
@@ -1160,8 +1160,8 @@ static void *runGame(void *unused) {
     NSFileManager *fm = NSFileManager.defaultManager;
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *bundle = NSBundle.mainBundle.resourcePath;
-    NSString *gameID = [NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenGameID"];
-    NSString *saveDirectory = [NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenSaveDirectory"];
+    NSString *gameID = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableGameID"];
+    NSString *saveDirectory = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableSaveDirectory"];
     NSArray *localizations = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleLocalizations"];
     NSString *language = nil;
     /* Keep the prior runtime language for games without a per-app language list. */
@@ -1190,7 +1190,7 @@ static void *runGame(void *unused) {
     setenv("DM_MSL_DIR", [bundle stringByAppendingPathComponent:@"Shaders/ios"].fileSystemRepresentation, 1);
     setenv("DM_PSO_MANIFEST", "off", 1); setenv("DM_NVN_TBDR", "0", 1); setenv("DM_PRESENT_LINK", "0", 1);
     setenv("DM_AUDIO", "1", 1);
-    NSDictionary *environment = [NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenRuntimeEnvironment"];
+    NSDictionary *environment = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableRuntimeEnvironment"];
     for (NSString *key in environment) {
         setenv(key.UTF8String, [environment[key] UTF8String], 1);
     }
@@ -1200,7 +1200,7 @@ static void *runGame(void *unused) {
     setenv("SS_DISPLAY_HZ", "60", 1);
     AVAudioSession *audio = AVAudioSession.sharedInstance;
     [audio setCategory:AVAudioSessionCategoryPlayback error:nil];
-    NSNumber *ioBuffer = [NSBundle.mainBundle objectForInfoDictionaryKey:@"NitenAudioIOBufferDuration"];
+    NSNumber *ioBuffer = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableAudioIOBufferDuration"];
     if (ioBuffer) [audio setPreferredIOBufferDuration:ioBuffer.doubleValue error:nil];
     [audio setActive:YES error:nil];
     ss_haptics_ios_init();
@@ -1208,11 +1208,11 @@ static void *runGame(void *unused) {
         BOOL paused = [note.userInfo[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan;
         dm_audio_suspend(paused);
     }];
-    fprintf(stderr, "Nitenphone %s build %s %s; iOS %s\n", gameID.UTF8String, __DATE__, __TIME__, UIDevice.currentDevice.systemVersion.UTF8String);
+    fprintf(stderr, "Touchable %s build %s %s; iOS %s\n", gameID.UTF8String, __DATE__, __TIME__, UIDevice.currentDevice.systemVersion.UTF8String);
     return YES;
 }
 - (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {
-    UISceneConfiguration *config = [[UISceneConfiguration alloc] initWithName:@"Nitenphone" sessionRole:session.role];
+    UISceneConfiguration *config = [[UISceneConfiguration alloc] initWithName:@"Touchable" sessionRole:session.role];
     config.delegateClass = GameScene.class; return config;
 }
 @end

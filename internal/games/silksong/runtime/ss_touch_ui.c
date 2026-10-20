@@ -1,6 +1,6 @@
 /* Touch input for Silksong menus. Check the method slots and class slots of each main build before use. */
 #include "dm.h"
-#include "niten_game.h"
+#include "touchable_game.h"
 #include "ss_pointer.h"
 #include "ss_touch_ui.h"
 #include <math.h>

@@ -1,6 +1,6 @@
 /* Rhythm Heaven Groove adapter. Fixed-address changes belong here and must check the pinned module. */
 #include "dm.h"
-#include "niten_game.h"
+#include "touchable_game.h"
 #include <pthread.h>
 #include <unistd.h>
 #include "rh_touch.h"
@@ -77,7 +77,7 @@ static void rh_select_draw_size(const module_t *main) {
     LOG("Draw size: docked 1920x1080 (boost performance mode)");
 }
 
-void niten_game_install(void) {
+void touchable_game_install(void) {
     module_t *main = NULL;
     for (int i = 0; i < g_nmod; ++i)
         if (!strcmp(g_mod[i].name, "main")) main = &g_mod[i];
@@ -90,7 +90,7 @@ void niten_game_install(void) {
     rh_start_input_file();
 }
 
-int niten_game_host_call(int number, uint64_t *registers) {
+int touchable_game_host_call(int number, uint64_t *registers) {
     (void)number; (void)registers;
     return 0;
 }

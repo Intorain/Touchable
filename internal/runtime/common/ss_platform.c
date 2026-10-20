@@ -93,7 +93,7 @@ HLE_FORCE("_ZN2nn2vi20GetDisplayVsyncEventEPNS_2os15SystemEventTypeEPNS0_7Displa
 
 int dm_opmode(void) { return 0; }
 /* Performance mode for nn::oe::GetPerformanceMode: 0 normal, 1 boost (the docked value).
-   A game adapter can set it in niten_game_install(). The operation mode stays handheld. */
+   A game adapter can set it in touchable_game_install(). The operation mode stays handheld. */
 int ss_performance_mode;
 void dm_focus_set(int value) {
     if (atomic_exchange(&focus, value) == value) return;
