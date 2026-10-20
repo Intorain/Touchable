@@ -41,6 +41,22 @@ Back up the saves from the old apps before the first install of a new build.
 Restore the backup into the new apps after the install.
 Signing needs provisioning profiles for the new Bundle IDs.
 
+On 2026-10-20 the user removed the old apps from the iPhone and the iPad mini.
+Before the removal, the full `Documents` folder of each old app was copied to `.touchable/saves/<id>/<device>-before-touchable-rename-20261020-004619/`.
+Each copy has a SHA-256 list next to it.
+Silksong build 21 and Rhythm Heaven build 34 were then installed on both devices with the new Bundle IDs.
+Xcode automatic signing made the profiles. They include both devices and expire on 2026-10-27.
+The Silksong build ran the launcher's shader and first-run checks again.
+The Rhythm Heaven build used the manual Xcode path.
+The new apps were not started after the install.
+
+After the install, each device's backup was copied into the new apps on the same device.
+The copy wrote the committed save folder `Documents/Saves/<product>/` and `Documents/Saves/pso_user.tsv`.
+The game rebuilds its `.work` copy from the committed folder at start.
+A read-back from each device matched the backup SHA-256 values for all 20 files.
+The iPhone Silksong save is from 2026-10-19 17:34. Silksong was running on the iPhone during the backup, so progress after that time is not included.
+The games were not started after the restore.
+
 ### Effect on local files
 
 Reports, logs, and history entries before 2026-10-20 can contain the previous absolute paths.
