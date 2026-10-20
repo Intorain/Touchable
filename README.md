@@ -2,27 +2,36 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-Touchable gives ported games a more native iOS experience. It improves touch controls, virtual buttons, graphics, and performance. Supply your own Switch game files. Build native iPhone games on an Apple Silicon Mac.
+Touchable brings ported games a **native iOS experience**, with better touch controls, virtual buttons, graphics, and performance. **Bring your own Switch game files**, and build native iPhone and iPad games on an Apple Silicon Mac.
 
-## Supported games
+## General Improvements
+
+Every supported game gets these improvements:
+
+- 🫧 **Liquid Glass controls**: on-screen buttons use the iOS Liquid Glass style.
+- 📳 **HD rumble**: precise vibration through the Taptic Engine or a connected controller.
+- 🎮 **Game controllers**: play with a physical controller.
+- 📱 **iPhone and iPad**: one app runs full screen on both.
+- 🚀 **Game Mode**: native iOS and iPadOS Game Mode gives the game priority for performance.
+- 🌐 **Language setting**: choose the game language per app in iOS Settings.
+
+## Exclusive Improvements
 
 | Game | Game file version | Improvements |
 | -------- | ------------------------ | ------------------------------------------------------------ |
-| Rhythm Heaven | v0 (nsp) | Touch controls; HD rumble; virtual buttons cover less of the screen; more intuitive play and feedback; Liquid Glass buttons |
-| Silksong | v0 (nsp) + v655360 (nsp) | Virtual button controls; HD rumble; adaptive widescreen; full resolution + 120 Hz |
+| Rhythm Heaven | v0 (nsp) | Touch controls adapted to each level; fewer on-screen buttons that cover less of the picture; more intuitive play and feedback; ambient border glow |
+| Silksong | v0 (nsp) + v655360 (nsp) | Adaptive screen size; full resolution; 120 Hz on ProMotion screens |
 
 ## Get started
 
-1. Install the full Xcode.
-2. Put `prod.keys` in `MyGameFiles/keys/`.
+1. Install the full Xcode and sign in to your Apple Account in Xcode.
+2. Put your `prod.keys` in `MyGameFiles/keys/`.
 3. Put each NSP in the folder for its game.
 4. Double-click `Touchable.command`.
 5. Select a game.
 6. Select "Build and install" or "Build IPA only".
 
 The first run needs a network connection. The launcher prepares the local tools.
-The first signing needs your Apple Account in Xcode.
-The launcher saves your local settings. You do not need to change internal configuration files.
 
 ## Where to find things
 
@@ -32,9 +41,6 @@ The launcher saves your local settings. You do not need to change internal confi
 | [IPA](IPA/README.md) | Find the finished install packages |
 | [docs](docs/README.md) | Read the user guides |
 | [internal](internal/README.md) | See the code and developer tools |
-
-Game files, keys, personal settings, saves, and install packages stay on your Mac.
-They do not go into Git.
 
 For detailed requirements, see [Supported games](docs/supported-games.md).
 For install steps, see [Signing and installation](docs/signing-and-install.md).
