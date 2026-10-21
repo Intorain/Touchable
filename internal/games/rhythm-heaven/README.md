@@ -1,5 +1,36 @@
 # Rhythm Heaven
 
+## 2026-10-21: Items after the first list page (build 37)
+
+A long list draws the rows after its first page. The game parks those rows at one off-page position.
+Build 36 gave them no touch area. Only the first 13 rows were clickable.
+
+Build 37 computes each row from the list geometry:
+
+- It reads the row base and the row spacing from the first page.
+- It places every visible row at `base - item number * spacing`.
+- It keeps an empty menu frame and an empty map frame when no row has a touch area.
+
+Check results:
+
+- PlayCover, Demo Videos -> Rhythm Games: the items after 三只螃蟹 are clickable. 滚滚行进, 混奏 3, and later items open.
+- The demo list, the archive lists, and the start menu keep their behavior.
+- `test_touch`, `test_menu`, `test_touch_layout`, and `games.py check` pass.
+
+Known problems in build 37:
+
+- In the Music Room, 其他类别 -> second level, a drag can count as a tap.
+- In the Music Room, 我的最爱 crashes when it is clicked.
+- Builds 38 and 39 tried to fix these problems. They made the start page crash. They are not used.
+
+Build 37 is not installed on the iPhone. The iPhone and the iPad mini have build 35.
+The Release IPA uses Bundle ID `com.sdmj76.RhythmHeaven`. It is unsigned. Sign it at install time.
+The Release IPA is `IPA/rhythm-heaven/RhythmHeaven-build37-release-com.sdmj76.RhythmHeaven-20261021.ipa`.
+The SHA-256 is `d59177ff2e9403bff919536d4a355f5a1a30c9b06d3b6a1c2d24b5fd6e27fae9`.
+It is 2,743,608,093 bytes.
+The earlier build 37 Release and Debug IPAs use Bundle ID `com.mmmz.NitenphoneSilksong`.
+The old save is in the container of that ID. The new app starts with a new save.
+
 ## 2026-10-21: Cafe unlocked in the phone save
 
 The user reported that the cafe (咖啡店) could not be unlocked.
@@ -322,7 +353,7 @@ The records below do not include the short start check after this reorganization
 | Active content | `.touchable/work/rhythm-heaven/base/` |
 | Active modules | `.touchable/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
 | Graphics | 1920×1080, NVN to Metal, 35 shader stages |
-| iPad/iPhone app | Build 35 (installed on the iPhone and the iPad mini on 2026-10-20), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
+| iPad/iPhone app | Build 37 (not installed. The iPhone and the iPad mini have build 35), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
 | Phone save | `Documents/Saves/RhythmHeaven` |
 | Play record | Multiple rhythm games, some Remixes, menus, and save read/write are recorded. The full play-through is not verified |
 | Direct touch | Normal lists, the map, pause options, the rhythm archive, the music room, and demo videos |
