@@ -1,5 +1,16 @@
 # Rhythm Heaven
 
+## 2026-10-21: Cafe unlocked in the phone save
+
+The user reported that the cafe (咖啡店) could not be unlocked.
+Cause: `tools/unlock_all.py` unlocked menu entries 1–13, but entry 0 is the cafe. The name table at main+0xcdad60 lists entry 0 as `cafe` and entry 13 as `dummy`.
+The game unlocks the cafe after an early event. In the phone save, all stages were already cleared by the tool, so this event cannot occur.
+The tool now unlocks entries 0–12 and leaves the `dummy` entry 13 unchanged. On a save that the old tool changed, it changes only the cafe byte (0x28: 0 → 3).
+Mac host test with a copy of the phone save: with the fix, the cafe item (coffee cup, "new" badge) shows in the menu column of the level map. Without the fix, it does not show. The cafe itself was not entered in the test.
+On 2026-10-21, the fixed save was written to the iPhone (`Documents/Saves/RhythmHeaven` and `.work`). The game was closed. The read-back matched.
+The backup is in `.touchable/saves/rhythm-heaven/phone-before-cafe-fix-20261021/`. The iPad mini save was not changed.
+Evidence: [the cafe record](../../../.touchable/work/rhythm-heaven/reports/cafe-unlock-20261021/README.md).
+
 ## 2026-10-21: Simplified Chinese with a Hong Kong or Taiwan region (source change, no build)
 
 Contributed by @sdmj76 in pull request #3.
@@ -478,7 +489,7 @@ The first item of the start menu, "What is Rhythm Heaven?", plays an introductio
 
 ## Unlock all levels
 
-`internal/games/rhythm-heaven/tools/unlock_all.py` changes the save `game_save.bin`. It unlocks all 80 rhythm games and Remixes of the main world, the 30 levels of the reverse world, and the 13 menu items on the left side of the level map. (On the Mac, Rhythm Toys was confirmed to appear. The mapping of the other items is a guess from the name table and is not verified one by one.) Cleared levels and earned medals do not change.
+`internal/games/rhythm-heaven/tools/unlock_all.py` changes the save `game_save.bin`. It unlocks all 80 rhythm games and Remixes of the main world, the 30 levels of the reverse world, and the 13 menu items on the left side of the level map, including the cafe. (On the Mac, Rhythm Toys and the cafe were confirmed to appear. The mapping of the other items comes from the name table and is not verified one by one.) Cleared levels and earned medals do not change.
 
 ```sh
 .touchable/venv/bin/python internal/games/rhythm-heaven/tools/unlock_all.py original-save/game_save.bin --output new-directory/game_save.bin
@@ -490,7 +501,7 @@ Save format (from the save management code in `main` at main+0x3ca0 and main+0x3
 | --- | --- |
 | 0x00–0x0F | Not a checksum. The game does not check it |
 | 0x10, 0x14 | Header size 0x34 and file size 0x1188. The game checks only these two fields |
-| From 0x28, 4 bytes per entry | Menu items (kind 0, numbers 1–13): 0 hidden, 1 shows "?", 3 unlocked |
+| From 0x28, 4 bytes per entry | Menu items (kind 0, numbers 0–13; names from main+0xcdad60: 0 cafe, 1 bar, 2–3 toys, 4 score, 5 BeatSpell, 6 drum, 7 credit, 8 cast, 9–10 parts, 11 player number, 12 name edit, 13 dummy): 0 hidden, 1 shows "?", 3 unlocked. Builds before 2026-10-21 of the tool skipped entry 0 (cafe) |
 | From 0x60, 16 bytes per entry | Main world levels (kind 1, numbers 0–79): 0 hidden, 1 "?", 2 unlocked (NEW), 4 and higher for played, cleared, and medals |
 | From 0x560, 8 bytes per entry | Reverse world levels (kind 2, numbers 0–29). The states are the same as above |
 
