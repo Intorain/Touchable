@@ -1,5 +1,59 @@
 # Rhythm Heaven
 
+## 2026-10-22: Optional TV mode (build 43)
+
+The game offers its TV latency calibration only in console mode. The runtime used to report
+handheld mode at all times. The app now has an optional TV mode for this game.
+
+- Runtime: `DM_OPMODE=1` reports console mode from `nn::oe::GetOperationMode`. The input layer
+  presents a full-key controller in console mode. `DM_OPMODE=0` or an absent value keeps
+  handheld mode.
+- Build 40 was the first TV mode package. Its button required a start-menu flag, so the main
+  interface did not show it. Build 41 shows the button in all non-level periods. Build 42
+  hides it in a level pause and keeps it visible while the alert is open. Build 43 shows the
+  target platform in the icon and uses the feature line in the first alert.
+- A glass button appears outside levels. It hides in a level, including the pause menu. It
+  stays visible while its confirmation alert is open. It sits below the − button in the
+  right-side controls. On iPad this position is also left of the + button. The button shows
+  the target mode icon: `tv` in handheld mode and `iphone.landscape` in TV mode.
+- A tap opens a confirmation alert. The title shows the current mode. The message asks whether
+  to switch and shows `启用功能：延迟校正` for handheld to TV mode or `关闭功能：延迟校正`
+  for TV to handheld mode. Cancel keeps the current mode. Confirm saves the choice in
+  `NSUserDefaults` under `TouchableTVMode`.
+- The confirm action opens one more alert. It says `切换成功，重启APP生效` or
+  `切换失败，请重试`. It has one `好` button.
+- The button icon and the current mode in the alert keep the mode of the running app. The app
+  reads the saved choice only at the next launch. A launch environment that sets
+  `DM_OPMODE` has priority. The profile value is the default before the first choice.
+- An in-process restart is not possible. The loader maps the guest modules into global state,
+  the display event rejects a second event, and the app starts the game once. The runtime has
+  no teardown. The alert therefore asks for an app restart.
+
+Checks:
+
+- `test_touch`, `test_menu`, `test_touch_layout`, and the Python suite pass.
+- Mac host with `DM_OPMODE=1` logs `Operation mode: TV (DM_OPMODE)`.
+- The same host logs `Input: player 0x20 id 0x20 style 0x1 supported 0x3 mode 1` and
+  `Input: guest read buttons 0x1`.
+- The generated Debug app for iPhone builds without signing. `TouchableTVModeToggle` is in its
+  `Info.plist`.
+- The Release device build passes. The unsigned IPA has build 43, Bundle ID
+  `com.sdmj76.RhythmHeaven`, and `TouchableTVModeToggle = true`.
+- The Mac host did not pass the title screen because its Metal shader libraries are absent.
+  The mode button and the alert are not tested on a device.
+
+The Release IPA is `IPA/rhythm-heaven/RhythmHeaven-build43-tv-mode-ui-20261022.ipa`.
+It is unsigned. Sign it at install time.
+Its SHA-256 is `36bd883fba0e3944c84614b1c6cba20caf5354a792a9a46888d2cfb33c5c15b1`.
+It is 2,743,610,058 bytes.
+Build 43 was built before the merge with `origin/main`. The merged source also contains the
+upstream build 35 loading-screen controls. Build a new package to include them.
+Builds 38 and 39 were local attempts and are not used. Build 40 was the first TV mode
+package. Build 43 is the current package. The build 41 and 42 IPAs were deleted at user
+request.
+
+See [the TV mode report](../../../.touchable/work/rhythm-heaven/reports/tv-mode-option-20261021/README.md).
+
 ## 2026-10-21: Cafe unlocked in the phone save
 
 The user reported that the cafe (咖啡店) could not be unlocked.
@@ -322,7 +376,7 @@ The records below do not include the short start check after this reorganization
 | Active content | `.touchable/work/rhythm-heaven/base/` |
 | Active modules | `.touchable/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
 | Graphics | 1920×1080, NVN to Metal, 35 shader stages |
-| iPad/iPhone app | Build 35 (installed on the iPhone and the iPad mini on 2026-10-20), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
+| iPad/iPhone app | Build 43 (not installed. The iPhone and the iPad mini have build 35), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
 | Phone save | `Documents/Saves/RhythmHeaven` |
 | Play record | Multiple rhythm games, some Remixes, menus, and save read/write are recorded. The full play-through is not verified |
 | Direct touch | Normal lists, the map, pause options, the rhythm archive, the music room, and demo videos |

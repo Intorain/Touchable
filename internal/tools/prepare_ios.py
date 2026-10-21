@@ -42,6 +42,13 @@ def shell_controller_haptics(shell):
     return value
 
 
+def shell_tv_mode_toggle(shell):
+    value = shell.get('tv_mode_toggle', False)
+    if not isinstance(value, bool):
+        raise WorkspaceError('ios.tv_mode_toggle must be true or false.')
+    return value
+
+
 def write_game_header(game, directory):
     directory.mkdir(parents=True, exist_ok=True)
     header = directory / 'touchable_game_config.h'
@@ -141,6 +148,7 @@ def main():
         if shell.get('touch_layout'): info['TouchableTouchLayout'] = shell['touch_layout']
         if shell.get('native_drawable'): info['TouchableNativeDrawable'] = True
         if shell_controller_haptics(shell): info['TouchableControllerHaptics'] = True
+        if shell_tv_mode_toggle(shell): info['TouchableTVModeToggle'] = True
         localizations = shell_localizations(shell)
         if localizations:
             info['CFBundleLocalizations'] = localizations
