@@ -1,5 +1,15 @@
 # Rhythm Heaven
 
+## 2026-10-21: Simplified Chinese with a Hong Kong or Taiwan region (source change, no build)
+
+Contributed by @sdmj76 in pull request #3.
+
+- Fault: with Traditional Chinese as the system language, the per-app choice Simplified Chinese did not change the game language. iOS stores the choice as a tag such as `zh-Hans-HK`. The old mapping read the region (`HK`) before the script (`Hans`) and selected Traditional Chinese.
+- `internal/runtime/common/ss_language.h` (new, used by `ss_platform.c`): the script subtag selects the written form. The region is used only when the tag has no script. Cantonese (`yue`) follows the same rule; without a script it selects Traditional Chinese.
+- `internal/platform/ios/App.m`: the app reads `AppleLanguages` first, where iOS stores the per-app language. Then it uses the bundle localizations and `NSLocale.preferredLanguages`. `game.log` records the three values.
+- `internal/tests/common/test_language.c`: checks `zh-Hans-HK`, `zh-Hans-TW`, `zh-Hant-HK`, Cantonese, and the other game languages.
+- Not tested yet: a device build with a Traditional Chinese system and a Simplified Chinese app language.
+
 ## 2026-10-20: Touch controls hidden on loading screens (build 35)
 
 In a Silksong session, the user asked that the touch controls show only when needed, also in Rhythm Heaven.
