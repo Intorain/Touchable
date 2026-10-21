@@ -1,5 +1,144 @@
 **Silksong Switch → iPhone / iPad port workspace**
 
+## 2026-10-20: Build 28 installed on the iPhone and the iPad mini (wider view removed)
+
+User request: "undo wider view and install". Build 28 is build 27 without the camera zoom; the map changes stay. IPA: `IPA/silksong/Silksong-build28-20261020-220739-0b1591.ipa`. Silksong was closed on both devices.
+
+- iPhone: backup `.touchable/saves/silksong/phone-before-install-20261020-221047-dea46c/`. The iPhone reports build 28. All 14 save files match the backup.
+- iPad mini: the first install failed because the Mac disk was full. After the user approved the deletion of 19 old Silksong Xcode run folders (126.8 GB; see `.touchable/work/silksong/reports/disk-cleanup-20261020/`), the install passed. Backup `.touchable/saves/silksong/phone-before-install-20261020-222025-af9d8a/`. The iPad reports build 28. All 6 save files match the backup.
+- The game was not started after the installs.
+
+## 2026-10-20: Camera zoom for the touch layout (removed; only build 27 had it)
+
+Removed later on 2026-10-20 at the user's request ("undo wider view and install"): the source is back to its state before the zoom, and build 28 has no zoom. The zoom source is kept as `zoom-source.patch` in the camera zoom record.
+
+User request: keep the controller layout and scale the game view, so that the distance from the D-pad center to the face-button center shows the horizontal range of the original 16:9 picture. The vertical range scales by the same factor.
+
+- `ss_display_set_control_span()` (shared `ss_display.c`) stores the zoom r = (16/9) × view height / span. `App.m` passes the span of the Switch layout. The Mac host reads `SS_VIEW_SPAN`. iPhone 16 Pro Max: span 636 points, r 1.2299. iPad mini: span 894.6 points, r 1.4785.
+- `runtime/ss_display.c` hooks `ForceCameraAspect.Update` (field of view so that tan(F/2) = r·tan(F0/2), 24° → 29.30° on the iPhone) and `CameraController.LateUpdate` (the camera stays inside the scene with the zoomed half view; a scene smaller than the view is centered). Only main `fc9ea4cc`, and only when r ≠ 1. 16:9 and Rhythm Heaven do not change.
+- The world texture grows to min(720, 576·r) reference lines: iPhone 1884×868, iPad 1644×1080.
+- Tests: `test_display.c`, App.m syntax check, and Mac host runs at the iPhone and iPad aspects: measured scale, room edges and a room transition, HUD, inventory, pause, and frame time (p50 8.33 ms at 120 Hz). No device test.
+- Limits: a room smaller than the zoomed view shows dark area outside the room (iPad: about 2.3 units above and below a 20-unit corridor). Lock areas and screen-edge effects keep their 16:9 values. The phone GPU cost of the larger world texture is not measured.
+
+For details, see [the camera zoom record](../../../.touchable/work/silksong/reports/camera-zoom-20261020/README.md).
+
+## 2026-10-20: Build 27 installed on the iPhone and the iPad mini
+
+Build 27 adds the camera zoom (the strip between the D-pad and ABXY centers shows the 16:9 width; see the camera zoom entry) and the map changes (drag on the marker page; Y and A at the left edge, X and B at the right edge). IPA: `IPA/silksong/Silksong-build27-20261020-214239-623bef.ipa`. Silksong was running on both devices when the build finished. A watcher installed each device only after the game was closed there. Backups: iPad `.touchable/saves/silksong/phone-before-install-20261020-214639-eaf93a/`, iPhone `.touchable/saves/silksong/phone-before-install-20261020-215155-eabc69/`. Both devices report build 27. The save files match the backups (iPad 6 files, iPhone 14 files). The game was not started after the installs. The phone GPU cost of the zoom is not yet measured.
+
+## 2026-10-20: Build 26 installed on the iPhone
+
+Build 26 adds the map view buttons below (A at the left edge, X and B at the right edge). IPA: `IPA/silksong/Silksong-build26-20261020-203824-cc3d43.ipa`. Silksong was not running before the install. The launcher backed up the saves to `.touchable/saves/silksong/phone-before-install-20261020-204127-e230b6/`. The iPhone reports build 26, and all 14 save files match that backup. The game was not started after the install. The iPad mini is not updated.
+
+## 2026-10-20: Map view shows only A, X, and B (source change, no build)
+
+User request: "in map view, only show A button at bottom left, X and B at bottom right".
+
+- `internal/platform/ios/App.m`: the zoomed map hides the other controls. Y above A at the left edge, X above B at the right edge, 76 points apart on a phone.
+- `ss_touch_ui.c`: a drag also moves the map on the marker placement page (after A). The cursor stays in the center. The pad toggle shows the full pad. A drag moves the map.
+- iOS Simulator test passed. See [the map buttons record](../../../.touchable/work/silksong/reports/map-buttons-20261020/README.md).
+
+## 2026-10-20: Build 25 installed on the iPhone
+
+Build 25 contains the next entry: crest carousel, side arrows, map drag, cutscene controls, room transitions, and capsule shoulders. IPA: `IPA/silksong/Silksong-build25-20261020-201614-40a7ca.ipa`. Silksong was running on the iPhone when the build started, so the install waited until it was closed. The launcher backed up the saves to `.touchable/saves/silksong/phone-before-install-20261020-201923-a28287/`. The iPhone reports build 25, and all 14 save files match that backup. The game was not started after the install. The iPad mini is not updated.
+
+## 2026-10-20: Crest carousel, side arrows, map drag, cutscene controls, room transitions, capsule shoulders (source change, no build)
+
+- Change Crest takes taps: a side crest or a scroll arrow moves the carousel one step, and the center crest selects it.
+- The large ◇ arrows at the sides of the inventory change the pane (L and R).
+- A drag moves the zoomed map through the game's `GameMap.UpdateMapPosition`. The pad stays on the map.
+- A cutscene hides the pad. It shows Skip (A, only when the game allows a skip) in the place of +, and the pad toggle. The new pointer mode is `SS_POINTER_CUTSCENE`.
+- Room transitions keep the pad. The title-to-game load and quit to title still hide it.
+- ZL, L, R, and ZR are capsules (74 × 46 points on a phone, 88 × 55 on a tablet). A very short iPad window keeps circles. On the iPhone 16 Pro the pad toggle now sits next to +.
+- Tests: Mac host at 16:9, iOS Simulator harness, layout and pointer C tests, Python tests, and a Rhythm Heaven host build. The iPhone and iPad aspect host runs were stopped by the user.
+
+For details, see [the record](../../../.touchable/work/silksong/reports/cutscene-capsule-20261020/README.md).
+
+## 2026-10-20: Build 24 installed on the iPhone
+
+Build 24 contains the entries below down to the save-select and drag-scroll changes: the slide that keeps the first button pressed, the D-pad press light, the two-tap save select, and inventory drag scrolling. IPA: `IPA/silksong/Silksong-build24-20261020-193450-ed25b2.ipa`. The launcher backed up the iPhone saves to `.touchable/saves/silksong/phone-before-install-20261020-193734-fb615a/`. The iPhone reports build 24. After the install, all 14 save files match that backup. The game was not started after the install. The iPad mini is not updated.
+
+## 2026-10-20: Face-button slide keeps the first button pressed (source change, no build)
+
+User request: "when sliding, the first pressed key should be always pressed unless finger leave screen."
+
+- `internal/platform/ios/App.m` (`PadButton`): the button where the touch starts stays pressed until the finger lifts. A slide onto another face button also presses that button, and a slide onward releases only that second button. A slide back leaves only the first button.
+- The first slide no longer releases the first button for a moment while UIKit's touch tracking ends.
+- Real-touch iOS Simulator test: B → Y → X → B gives B, B+Y, B+X, B, and none at the lift.
+
+For details, see [the slide hold record](../../../.touchable/work/silksong/reports/slide-hold-first-20261020/README.md).
+
+## 2026-10-20: D-pad press light fitted to the glass arm (source change, no build)
+
+User request: "the press effect of D-pad is not exactly match. check and fix it".
+
+- Fault: the lit arm was a separate shape with a white glow outside the glass edge, and a hard line at the center.
+- `internal/platform/ios/App.m` (`PadDpadMarks`): the light is clipped to the glass bar, so it has the arm outline. The outer glow is removed. The light fades in from the other bar. The center stays unlit, and a diagonal lights two clean arms. The fill (white 0.2) and the face-button press effect do not change.
+- Real-touch iOS Simulator test (iPhone 17 Pro Max): right, up-right, and up give the correct inputs, and no light falls outside the arm.
+
+For details, see [the D-pad press record](../../../.touchable/work/silksong/reports/dpad-press-match-20261020/README.md).
+
+## 2026-10-20: Two taps on the save select, and drag scrolling in the inventory (source change, no build)
+
+User requests: "change save choosing to double confirm" and "in inventory/tasks or similar page, touch can't drag to scroll, Fix it".
+
+- `runtime/ss_touch_ui.c`: on the save select (menu state 6), the first tap on an item only selects it. A second tap on the same item clicks it. This applies to the slots, the restore points, the clear button, and Back.
+- A vertical drag in an inventory pane moves the pane list with the finger. The adapter sets the position of the game's `ScrollView`; the game clamps it and updates the scroll arrows. The quest list and the item grids (equipment, tools, journal) have a list. The map has none.
+- An inventory tap now acts on the release, and only when the touch does not drag.
+- Mac host tests at 16:9 and at the iPhone and iPad aspects: the save select needs two taps, and the journal list scrolls, takes a tap, and stops at the top.
+- Not tested: a drag that starts on the selected item (the app holds A there), the completed-quest view, shops, and a device.
+
+For details, see [the two-tap and scroll record](../../../.touchable/work/silksong/reports/touch-confirm-scroll-20261020/README.md).
+
+## 2026-10-20: Slide between A, B, X, and Y (source change, no build)
+
+User request: "Make ABXY buttons able to slide. example: when I am pressing B while I want to click Y for attack. I can slide my finger to Y without leaving screen, then Y activated."
+
+- `App.m` (`PadButton`): a finger on A, B, X, or Y can slide onto another face button. The press moves when the finger enters the touch area of the new button. The finger never holds two buttons. (Changed later on 2026-10-20: the first button now stays pressed. See the entry above.) A button that another finger holds does not take the press. Other buttons and the D-pad do not slide.
+- The slid-to button shows a drawn white fill (0.2, as the lit D-pad arm). The system glass press look shows only for real touches, so it cannot show there. The first button drops its press look when the finger leaves it.
+- Real-touch iOS Simulator tests (iPhone 17 Pro Max): B → Y, A → B → X, B → Y → B, a tap, a slide with the D-pad held, and a slide onto a button that another finger holds gave the expected input. The Rhythm Heaven layout is unchanged.
+- Not tested: a device and the iPad simulator.
+
+For details, see [the slide record](../../../.touchable/work/silksong/reports/slide-face-buttons-20261020/README.md).
+
+## 2026-10-20: −, +, and the pad toggle at the side edges (source change, no build)
+
+User request: "Move + and - and controller key to most left or right".
+
+- `TouchLayout.h`: on a phone, − (and Back) and + move to the side edges of the safe area: 12 points outward. On a tablet they stay 8 points from the edges.
+- The pad toggle moves from the + row to the right edge, below +. On a phone 375 points high there is no space above ZR, so it stays next to +.
+- In a small iPad window (phone layout), − and + now stay below the iPadOS window controls.
+- `test_touch_layout.c` passes at 11 sizes. The iOS Simulator harness with the real `App.m` shows the new positions on the iPhone 17 Pro Max and in an iPad mini window. The Rhythm Heaven layout gave identical iPhone screenshots.
+- Not tested: the full-screen iPad layout in a simulator (the simulator stays in portrait), and a device.
+
+For details, see [the edge buttons record](../../../.touchable/work/silksong/reports/edge-menu-buttons-20261020/README.md).
+
+## 2026-10-20: Touch controls hidden on loading screens (build 22)
+
+User request: "Make virtual controller only appears when needed. Sometimes it appears when loading screen. Fix it for both game".
+
+- Cause: the adapter published controller mode during loads, so the app showed the pad.
+- `runtime/ss_touch_ui.c` now publishes the new pointer mode `SS_POINTER_WAIT` in GameManager states 0, 2, 3, and 6, during the Unity boot, and on the title screen when a hero object exists (a save is loading). A title or pause menu without a selected item after the 90-frame grace also publishes `WAIT`, for up to 8 s. This covers quit to title.
+- The app hides the pad, the back button, and the pad toggle for a `WAIT` frame, and for up to 30 s after the last one (load hitches). Cutscenes keep the pad.
+- Mac host tests at the iPhone and iPad aspects: the pad is hidden from boot to the title menu, from the save tap to gameplay, and during quit to title. It shows on the title menu, in gameplay, and in the pause menu. An iOS Simulator harness with the real `App.m` confirmed the hidden controls.
+- Build 22 (launcher build) is installed on the iPhone and the iPad mini. The saves were backed up before the install and not restored. IPA: `IPA/silksong/Silksong-build22-20261020-134449-60dce2.ipa` (SHA-256 `d08a5ed3cc4129d2ffc88ae4475e901a46d4edf42376762ccc4641eac5bc6dc1`). The build 21 IPA is archived to `.touchable/archive/ipa/silksong/20261020-134449-60dce2/`.
+- iPhone test (the user played): the log shows the controls hidden from boot to the title menu, in two save loads, in four room transitions, and in quit to title. They showed again in gameplay and on title menu items. Menus kept their touch-menu controls.
+- Not tested: fast travel, deaths, cutscenes, and the iPad mini.
+
+For details, see [the loading controls record](../../../.touchable/work/silksong/reports/loading-controls-20261020/README.md).
+
+## 2026-10-20: PC save imported into slots 2 and 3 (save data only, no build)
+
+User request: install an all-unlocked PC (Steam) save on both devices.
+
+- A PC save is a .NET BinaryFormatter string of Base64 AES-256-ECB data. The plain data is the same JSON that the Switch game uses. The scripts in the record decode it.
+- PC slot 1 (normal, 101%, 16 h 51 min, version 1.0.28561) is now slot 2. PC slot 2 (Steel Soul, 99%, 24 h 10 min, version 1.0.28324) is now slot 3. Only `profileID` changed. `shared.dat` keeps all device keys and adds the PC endings A to I.
+- Mac host tests on a save copy: the save select shows both slots, both slots load into gameplay, and the inventory values match. Save and quit converts slot 2 to version 1.0.30000, and the reload passes.
+- The files were copied into `Documents/Saves/Silksong/` of build 21 on the iPhone and the iPad mini. Silksong was not running. A read-back matched. Slot 1 and all other files are unchanged. Backups are in `.touchable/saves/silksong/<device>-before-pc-save-20261020-133856/`.
+- After the build 22 install, the iPhone saves show that slots 2 and 3 were played and saved. The game converted them to version 1.0.30000. The iPad mini saves are unchanged.
+
+For details, see [the PC save import record](../../../.touchable/work/silksong/reports/pc-save-import-20261020/README.md).
+
 ## 2026-10-19: Builds 20 and 21, glass press effect aligned with Apple
 
 Build 21: The user did not like the new D-pad effect in build 20. The user asked for the previous highlight at a lower brightness. The D-pad uses the build 17–19 design again: two glass bars and a drawn white arm highlight (fill plus soft outer glow). The brightness is lower: white fill 0.32 → 0.2, outer glow 0.9 → 0.5. On a dark background, the brightness of a pressed arm decreases from 153 to 106 (49 at rest). The buttons continue to use the build 20 system press effect. Build 20 was not installed.
