@@ -1337,10 +1337,23 @@ static void *runGame(void *unused) {
     NSString *gameID = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableGameID"];
     NSString *saveDirectory = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableSaveDirectory"];
     NSArray *localizations = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleLocalizations"];
+    NSArray *appleLanguages = nil;
+    NSArray *preferredLanguages = nil;
+    NSArray *bundleLocalizations = nil;
     NSString *language = nil;
     /* Keep the prior runtime language for games without a per-app language list. */
     if ([localizations isKindOfClass:NSArray.class] && localizations.count) {
-        language = NSLocale.preferredLanguages.firstObject ?: @"zh-Hans";
+        /* The system stores the per-app language in AppleLanguages. NSLocale.preferredLanguages
+           can keep the system language when only the script changes, such as zh-Hant to zh-Hans. */
+        appleLanguages = [[NSUserDefaults standardUserDefaults] arrayForKey:@"AppleLanguages"];
+        for (NSString *value in appleLanguages) {
+            if ([value isKindOfClass:NSString.class] && value.length) { language = value; break; }
+        }
+        preferredLanguages = NSLocale.preferredLanguages;
+        bundleLocalizations = NSBundle.mainBundle.preferredLocalizations;
+        if (!language) language = bundleLocalizations.firstObject;
+        if (!language) language = preferredLanguages.firstObject;
+        if (!language) language = @"zh-Hans";
         setenv("DM_LANG", language.UTF8String, 1);
     }
     NSDictionary *directories = @{@"DM_SAVE": [[documents stringByAppendingPathComponent:@"Saves"] stringByAppendingPathComponent:saveDirectory],
@@ -1357,7 +1370,11 @@ static void *runGame(void *unused) {
     [fm moveItemAtPath:log toPath:[logs stringByAppendingPathComponent:@"previous.log"] error:nil];
     freopen(log.fileSystemRepresentation, "w", stderr); setvbuf(stderr, NULL, _IOLBF, 0);
     dup2(fileno(stderr), fileno(stdout)); setvbuf(stdout, NULL, _IOLBF, 0);
-    if (language) fprintf(stderr, "Preferred language: %s\n", language.UTF8String);
+    if (language) {
+        fprintf(stderr, "Preferred language: %s\n", language.UTF8String);
+        NSLog(@"Language values: AppleLanguages=%@, preferredLanguages=%@, bundlePreferredLocalizations=%@",
+              appleLanguages, preferredLanguages, bundleLocalizations);
+    }
     moduleDirectory = [bundle stringByAppendingPathComponent:@"Modules"];
     setenv("DM_ROMFS", [bundle stringByAppendingPathComponent:@"RomFS"].fileSystemRepresentation, 1);
     setenv("DM_NVN_SHMAP", [bundle stringByAppendingPathComponent:@"Shaders/shader_map.tsv"].fileSystemRepresentation, 1);

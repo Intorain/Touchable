@@ -1,4 +1,5 @@
 #include "hle.h"
+#include "ss_language.h"
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -122,54 +123,8 @@ HLE_FORCE("_ZN2nn2oe38GetHealthWarningDisappearedSystemEventEv", "No platform he
     if (!health_ready) { hle_bind_system_event(health_event, 0); hle_signal_system_event(health_event); health_ready = 1; }
     return health_event;
 }
-/* Map an iOS language tag to a Nintendo language code the game accepts.
-   Unsupported languages fall back to US English. */
-static const char *switch_language(const char *tag) {
-    if (!tag || !*tag) return "zh-Hans";
-    char text[32];
-    size_t length = strlen(tag);
-    if (length >= sizeof text) length = sizeof text - 1;
-    memcpy(text, tag, length); text[length] = 0;
-    for (char *p = text; *p; ++p) if (*p == '_') *p = '-';
-    char *parts[3] = {0};
-    int count = 0;
-    char *p = text;
-    while (p && *p && count < 3) {
-        parts[count++] = p;
-        char *dash = strchr(p, '-');
-        if (!dash) break;
-        *dash = 0;
-        p = dash + 1;
-    }
-    const char *language = parts[0];
-    if (!strcasecmp(language, "zh") || !strcasecmp(language, "cmn") ||
-        !strcasecmp(language, "wuu") || !strcasecmp(language, "hak") ||
-        !strcasecmp(language, "nan")) {
-        for (int i = 1; i < count; ++i)
-            if (!strcasecmp(parts[i], "hant") || !strcasecmp(parts[i], "tw") ||
-                !strcasecmp(parts[i], "hk") || !strcasecmp(parts[i], "mo")) return "zh-Hant";
-        return "zh-Hans";
-    }
-    if (!strcasecmp(language, "yue")) return "zh-Hant";
-    if (!strcasecmp(language, "ja")) return "ja";
-    if (!strcasecmp(language, "ko")) return "ko";
-    if (!strcasecmp(language, "de")) return "de";
-    if (!strcasecmp(language, "it")) return "it";
-    if (!strcasecmp(language, "nl")) return "nl";
-    if (!strcasecmp(language, "fr"))
-        return count > 1 && !strcasecmp(parts[1], "ca") ? "fr-CA" : "fr";
-    if (!strcasecmp(language, "es"))
-        return count > 1 && !strcasecmp(parts[1], "es") ? "es" : "es-419";
-    if (!strcasecmp(language, "en")) {
-        if (count > 1 && (!strcasecmp(parts[1], "gb") || !strcasecmp(parts[1], "au") ||
-                          !strcasecmp(parts[1], "nz") || !strcasecmp(parts[1], "za") ||
-                          !strcasecmp(parts[1], "ie"))) return "en-GB";
-        return "en-US";
-    }
-    return "en-US";
-}
 HLE_FORCE("_ZN2nn2oe18GetDesiredLanguageEv", "Read the selected app language", uint64_t, ss_language, void) {
-    const char *tag = switch_language(getenv("DM_LANG"));
+    const char *tag = ss_switch_language(getenv("DM_LANG"));
     char code[8] = {0};
     strncpy(code, tag, sizeof code - 1);
     uint64_t value;
