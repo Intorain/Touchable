@@ -1,12 +1,14 @@
 /* Rhythm Heaven Groove adapter. Fixed-address changes belong here and must check the pinned module. */
 #include "dm.h"
-#include "niten_game.h"
+#include "touchable_game.h"
 #include <pthread.h>
 #include <unistd.h>
 #include "rh_touch.h"
 #include "rh_menu.h"
 #include "rh_batch.h"
 #include "ss_touch.h"
+#include "ss_pointer.h"
+#include <time.h>
 
 /* The left half of the phone screen follows the current scene (see rh_touch.c). */
 static pthread_mutex_t touch_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -14,8 +16,22 @@ static rh_touch_state touch_state;
 static void rh_fs_open(const char *path) {
     rh_touch_hint hint;
     pthread_mutex_lock(&touch_lock);
+    int loading = rh_touch_loading(&touch_state, path);
     int changed = rh_touch_path(&touch_state, path, &hint);
     pthread_mutex_unlock(&touch_lock);
+    /* A screen change without a current menu or level frame is a load or a fade.
+       The phone then hides its touch controls (ss_pointer_controls). */
+    ss_pointer_frame frame;
+    int wait = loading && (!ss_pointer_read(&frame) || frame.mode == SS_POINTER_WAIT);
+    if (wait) {
+        frame = (ss_pointer_frame){.owner = 0x10ad, .mode = SS_POINTER_WAIT};
+        ss_pointer_publish(&frame);
+    }
+    if (loading && getenv("RH_MENU_TRACE")) {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        LOG("LOAD %lld.%03ld %s%s", (long long)now.tv_sec, now.tv_nsec / 1000000, path, wait ? " (wait)" : "");
+    }
     if (!changed) return;
     ss_touch_left_set(hint.layout, hint.first, hint.second, hint.extra);
     LOG("Touch left area: layout %d buttons %d %d extra %#x (%s)", hint.layout, hint.first, hint.second, hint.extra, path);
@@ -77,7 +93,7 @@ static void rh_select_draw_size(const module_t *main) {
     LOG("Draw size: docked 1920x1080 (boost performance mode)");
 }
 
-void niten_game_install(void) {
+void touchable_game_install(void) {
     module_t *main = NULL;
     for (int i = 0; i < g_nmod; ++i)
         if (!strcmp(g_mod[i].name, "main")) main = &g_mod[i];
@@ -90,7 +106,7 @@ void niten_game_install(void) {
     rh_start_input_file();
 }
 
-int niten_game_host_call(int number, uint64_t *registers) {
+int touchable_game_host_call(int number, uint64_t *registers) {
     (void)number; (void)registers;
     return 0;
 }

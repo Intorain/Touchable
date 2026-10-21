@@ -1,22 +1,17 @@
 # Rhythm Heaven
 
-## 2026-10-20: Simplified Chinese per-app language (build 35)
+## 2026-10-20: Touch controls hidden on loading screens (build 35)
 
-The system stores an app language with a region. Hong Kong uses tags such as `zh-Hans-HK` and `zh-Hant-HK`.
-The old language mapping treated every `HK` tag as Traditional Chinese. It ignored the `Hans` script.
-Thus the app stayed in Traditional Chinese when the user selected Simplified Chinese.
-The mapping now reads the script first. A region selects the script only when the tag has no script.
-The app reads `AppleLanguages` first. It then reads the bundle localizations and `NSLocale.preferredLanguages`.
-The game log records all three values.
-The new `internal/tests/common/test_language.c` passes. The `App.m` syntax check has only the existing warnings.
-The 48 Python tests pass.
-Build 35 reuses the build 34 patched modules, shaders, and RomFS. The source NSP is not in this copy.
-The local build used the reused shader chain `98bab944ce89`. This tree keeps its generated `525103439d46` chain.
-The device build succeeded.
-The IPA is unsigned. Use PlayCover or a signing tool before installation.
-The IPA is `IPA/rhythm-heaven/RhythmHeaven-build35-language-20261020.ipa`.
-The SHA-256 is `eeafd2560a91e419b03d771fae47bc36b4cc7739110c57876aca2c2f20bf7c83`.
-No device test was run.
+In a Silksong session, the user asked that the touch controls show only when needed, also in Rhythm Heaven.
+Before the change, the small D-pad and B, −, + showed during screen changes, because no frame was published.
+`runtime/rh_game.c` now publishes `SS_POINTER_WAIT` when a screen archive under `graph/` opens and no menu or level frame is current. Remix scene archives during play do not count (`rh_touch_loading()` in `runtime/rh_touch.c`).
+The app hides the small D-pad, B, −, +, X, and Y during the load, and keeps the controls unchanged for 2.5 s after a menu or level frame stops (menu fade-out).
+Mac host tests at the iPhone and iPad aspects showed no D-pad between screens. A frame gap inside a level now keeps the level controls.
+The title screen ("press A") still shows the fallback D-pad.
+Build 35 (manual Xcode path) is installed on the iPhone and the iPad mini. The saves were backed up before the install and not restored.
+On the iPhone, the user played: the log shows the controls hidden at boot and in five screen changes, and not hidden for the remix scene archives during play. The iPad mini was not tested.
+The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build35-loading-controls-20261020.ipa` (SHA-256 `a27ffc633e98f11fd7e68cec3deaca6452c15a1815812cef82452a9ade16f551`). The build 34 IPA set moved to `.touchable/archive/ipa/rhythm-heaven/before-build35/`.
+Evidence: [the loading controls record](../../../.touchable/work/rhythm-heaven/reports/loading-controls-20261020/README.md).
 
 ## 2026-10-19: System glass press effect (build 34)
 
@@ -26,12 +21,12 @@ A pressed glass button now shows only the system press effect: the glass becomes
 This applies to the small D-pad, B, −, +, Y, and X in Rhythm Heaven.
 The touch-point glow for A on the right half and for the single key on the left half is not a glass button. It does not change. The thin rings of unused directions also do not change.
 The Silksong session used real touches in the Simulator to check the rhythm layout (BeatSpell). The input of B, ▶, and Y is the same as before the change. A two-finger simultaneous press was not tested.
-Evidence: `.nitenphone/work/silksong/reports/glass-press-20261019/`.
+Evidence: `.touchable/work/silksong/reports/glass-press-20261019/`.
 Unit tests, the device build, and the IPA check passed. Build 34 is not installed.
 
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build34-glass-press-20261019.ipa`.
 The SHA-256 is `e00e8817f69e5ebfd2b4ec856bb7e4f65bf3f44b797debbededd65ea8a7f27c0`.
-The build 33 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build34/`.
+The build 33 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build34/`.
 
 ## 2026-10-19: Game Mode (build 33)
 
@@ -43,10 +38,10 @@ The Silksong session changes for 120 Hz, present pacing, and the clear continuat
 Mac host BeatSpell battle: 60 fps, longest frame interval 18 ms, 13 passes per frame. This is the same as build 29.
 Unit tests, the device build, and the IPA check passed. Build 33 is not installed.
 
-The build 33 IPA is `RhythmHeaven-build33-game-mode-20261019.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build34/`.
+The build 33 IPA is `RhythmHeaven-build33-game-mode-20261019.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build34/`.
 The SHA-256 is `6de716fb55c3ce338e2fc542ede01a8ec33b2f4db25da0cb3db61e3456a5f416`.
-The build 32 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build33/`.
-For details, see the [Game Mode record](../../../.nitenphone/work/rhythm-heaven/reports/game-mode-20261019/README.md).
+The build 32 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build33/`.
+For details, see the [Game Mode record](../../../.touchable/work/rhythm-heaven/reports/game-mode-20261019/README.md).
 
 ## 2026-10-19: Smoother transition between the picture edge and the letterbox border (build 32)
 
@@ -57,10 +52,10 @@ The start color comes from the outermost cell of the light map, not directly fro
 In offline renders, the seam step on the start menu decreased from 119 to 52 on iPhone and from 88 to 44 on iPad (scale 0–255). There are no jumps inside the letterbox border.
 22 Mac unit tests passed. Device build 32 and the IPA check passed. Build 32 is not installed.
 
-The build 32 IPA is `RhythmHeaven-build32-ambient-seam-20261019.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build33/`.
+The build 32 IPA is `RhythmHeaven-build32-ambient-seam-20261019.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build33/`.
 The SHA-256 is `ae0848612c84173da6c0c889d19074283ed865629ea0ea977e65aef24dd22df3`.
-The build 31 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build32/`.
-For details, see the [border glow record](../../../.nitenphone/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
+The build 31 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build32/`.
+For details, see the [border glow record](../../../.touchable/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
 
 ## 2026-10-19: Letterbox border follows the picture faster (build 31)
 
@@ -71,10 +66,10 @@ A Mac unit test (Metal 4 present path) confirms that the border follows within 8
 The build 30 iPhone log confirms that the new effect runs: frame time p50 16.67 ms, GPU p50 about 2.1 ms.
 Device build 31 and the IPA check passed. Build 31 is not installed. The iPhone has build 30.
 
-The build 31 IPA is `RhythmHeaven-build31-ambient-fast-20261019.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build32/`.
+The build 31 IPA is `RhythmHeaven-build31-ambient-fast-20261019.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build32/`.
 The SHA-256 is `da61ee38a379e1dc322f466bccb3213dd315d83dd7ce449403c8ca3512f81cd1`.
-The build 30 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build31/`.
-For details, see the [border glow record](../../../.nitenphone/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
+The build 30 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build31/`.
+For details, see the [border glow record](../../../.touchable/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
 
 ## 2026-10-19: More natural border glow (build 30)
 
@@ -100,10 +95,10 @@ The offline render comparison uses 8 game frames, at iPhone and iPad sizes.
 The device build and the IPA check passed.
 The user then installed build 30 on the iPhone.
 
-The build 30 IPA is `RhythmHeaven-build30-ambient-natural-20261019.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build31/`.
+The build 30 IPA is `RhythmHeaven-build30-ambient-natural-20261019.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build31/`.
 The SHA-256 is `73103adc4df9294fafc8707b902cad75aca94195ed6fec9e38a447d5f2f1d5d4`.
-The build 29 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build30/`.
-For details, see the [border glow record](../../../.nitenphone/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
+The build 29 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build30/`.
+For details, see the [border glow record](../../../.touchable/work/rhythm-heaven/reports/ambient-natural-20261019/README.md).
 
 ## 2026-10-18: BeatSpell performance and touch (build 29)
 
@@ -130,10 +125,10 @@ At 18:55 on 2026-10-18, build 29 was installed on the iPhone. After installation
 The game was not started after installation. The iPad mini still has build 27.
 There is no BeatSpell result on the iPhone.
 
-The build 29 IPA is `RhythmHeaven-build29-beatspell-20261018.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build30/`.
+The build 29 IPA is `RhythmHeaven-build29-beatspell-20261018.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build30/`.
 The SHA-256 is `3c30ec326138cba3e712f52c63bb873b25b817c7e4f2409637c5cb01aecddebf`.
-The build 28 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build29/`.
-For details, see the [BeatSpell record](../../../.nitenphone/work/rhythm-heaven/reports/beatspell-20261018/README.md).
+The build 28 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build29/`.
+For details, see the [BeatSpell record](../../../.touchable/work/rhythm-heaven/reports/beatspell-20261018/README.md).
 
 ## 2026-10-18: Liquid Glass buttons (build 28)
 
@@ -163,10 +158,10 @@ The launcher now refuses to build Rhythm Heaven.
 Reason: three upstream tool hashes in the rewrite record are out of date. The module output still matches the record.
 Build 28 uses the same manual Xcode path as build 27.
 
-The build 28 IPA is `RhythmHeaven-build28-liquid-glass-20261018.ipa`. It is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build29/`.
+The build 28 IPA is `RhythmHeaven-build28-liquid-glass-20261018.ipa`. It is moved to `.touchable/archive/ipa/rhythm-heaven/before-build29/`.
 The SHA-256 is `2261ef4889dd817fdedf5460abd40ea265b2113951677e7b45f2a8968e8bb719`.
-The build 27 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build28/`.
-For details, see the [Liquid Glass record](../../../.nitenphone/work/rhythm-heaven/reports/liquid-glass-20261018/README.md).
+The build 27 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build28/`.
+For details, see the [Liquid Glass record](../../../.touchable/work/rhythm-heaven/reports/liquid-glass-20261018/README.md).
 
 ## 2026-10-18: Border glow (build 27)
 
@@ -191,8 +186,8 @@ The iPhone was locked. Build 27 was not installed on it.
 
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build27-ambient-bars-20261018.ipa`.
 The SHA-256 is `6dff216774210ec54a9e701c8e170169e8adb165ae1718ab8678c4200b8bb6a9`.
-The build 26 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build27/`.
-For details, see the [border glow record](../../../.nitenphone/work/rhythm-heaven/reports/ambient-bars-20261018/README.md).
+The build 26 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build27/`.
+For details, see the [border glow record](../../../.touchable/work/rhythm-heaven/reports/ambient-bars-20261018/README.md).
 
 ## 2026-10-18: Controller haptics (build 26)
 
@@ -221,8 +216,8 @@ The IPA CRC and SHA-256 checks passed.
 
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build26-controller-haptics-20261018.ipa`.
 The SHA-256 is `7d9ac84b92df64be8d5141e7bd920f1dd23919bfcea729c9ed69de76bb01979c`.
-The build 19 and build 20 IPAs, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build26/`.
-For details, see the [controller haptics record](../../../.nitenphone/work/rhythm-heaven/reports/controller-haptics-20261018/README.md).
+The build 19 and build 20 IPAs, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build26/`.
+For details, see the [controller haptics record](../../../.touchable/work/rhythm-heaven/reports/controller-haptics-20261018/README.md).
 
 ## 2026-10-17: Language setting and build 19
 
@@ -248,8 +243,8 @@ Build 19 checked again on iPad mini: English, Japanese, Simplified Chinese, and 
 Build 19 was not installed or tested again on iPhone.
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build19-language-20261017.ipa`.
 The SHA-256 is `a59a4bc313351b329e2c580e2ac9532dc5373afa123fe14fa6df86c523feea76`.
-The build 18 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build19/`.
-For details, see the [language setting record](../../../.nitenphone/work/rhythm-heaven/reports/language-20261017/README.md).
+The build 18 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build19/`.
+For details, see the [language setting record](../../../.touchable/work/rhythm-heaven/reports/language-20261017/README.md).
 
 ## 2026-10-17: iPad adaptation (build 17)
 
@@ -269,16 +264,16 @@ Build 17 was not tested again on iPhone.
 The full levels and the multiplayer mode are not completed.
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build17-ipad-20261017.ipa`.
 The SHA-256 is `8edf28bf2679974edf03bcdae251ffe8de9f7182c9932b4bcc2d59c865dd6752`.
-The build 16 IPA, JSON, and SHA-256 are moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build17/`.
-For details, see the [iPad mini record](../../../.nitenphone/work/rhythm-heaven/reports/ipad-mini-20261017/README.md).
+The build 16 IPA, JSON, and SHA-256 are moved to `.touchable/archive/ipa/rhythm-heaven/before-build17/`.
+For details, see the [iPad mini record](../../../.touchable/work/rhythm-heaven/reports/ipad-mini-20261017/README.md).
 
 ## 2026-10-17: Directory reorganization and rebuild
 
 This rebuild uses build 16.
 The current IPA is in `IPA/rhythm-heaven/`.
-The latest app path is recorded in `.nitenphone/build/games/rhythm-heaven/latest.json`.
+The latest app path is recorded in `.touchable/build/games/rhythm-heaven/latest.json`.
 The original packages, keys, old apps, original IPAs, and saves are kept.
-The original IPA is moved to `.nitenphone/archive/ipa/`.
+The original IPA is moved to `.touchable/archive/ipa/`.
 This task adds the build, launcher, and start check records.
 Build 16 was installed on the iPhone through the launcher.
 Before and after installation, the SHA-256 of the 3 save-related files matched.
@@ -303,16 +298,15 @@ The records below do not include the short start check after this reorganization
 | Item | Current result |
 | --- | --- |
 | Game input | v0, Title ID `0100d9f01d474000`, SDK 21.4.5 |
-| Active content | `.nitenphone/work/rhythm-heaven/base/` |
-| Active modules | `.nitenphone/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
+| Active content | `.touchable/work/rhythm-heaven/base/` |
+| Active modules | `.touchable/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
 | Graphics | 1920×1080, NVN to Metal, 35 shader stages |
-| iPad/iPhone app | Build 35 (unsigned, not installed. The iPhone has build 30, the iPad mini has build 27), Bundle ID `com.mmmz.NitenphoneSilksong` |
+| iPad/iPhone app | Build 35 (installed on the iPhone and the iPad mini on 2026-10-20), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
 | Phone save | `Documents/Saves/RhythmHeaven` |
 | Play record | Multiple rhythm games, some Remixes, menus, and save read/write are recorded. The full play-through is not verified |
 | Direct touch | Normal lists, the map, pause options, the rhythm archive, the music room, and demo videos |
 | Save check | After build 29 was installed on the iPhone, the 3 files matched the backup. After the build 15 recheck, both saves kept 80 P modes |
 
-Build 35 fixes the Simplified Chinese per-app language mapping. Build 35 is unsigned and not installed.
 Build 34 uses the system glass press effect. Build 33 declares Game Mode and stays at 60 Hz. Build 32 makes the transition between the picture edge and the letterbox border smoother. Build 31 makes the letterbox border follow the picture faster (time constant 0.06 seconds). None of these builds is installed on a device yet.
 Build 30 rewrites the border glow. It passed unit tests and the offline render comparison. The user ran it on the iPhone.
 Build 29 fixes the performance and touch controls of BeatSpell. It passed the Mac host and Simulator checks and is installed on the iPhone. BeatSpell on the iPhone is not confirmed yet.
@@ -328,20 +322,20 @@ Build 27 was not tested again on iPhone.
 Build 15 is installed on iPhone 16 Pro Max (iOS 27.2).
 The user confirmed that touch works correctly in the three new menus.
 Mac checks cover list drag, item tap, comic open, music playback, and demo video start.
-For details, see the [extra menu touch report](../../../.nitenphone/work/rhythm-heaven/reports/extra-menu-touch-20261016-144228/README.md).
+For details, see the [extra menu touch report](../../../.touchable/work/rhythm-heaven/reports/extra-menu-touch-20261016-144228/README.md).
 
 Build 14 fixes repeated texture uploads caused by the shared memory pool lookup.
 A manual iPhone record of about 12 minutes contains 44,377 timed frames.
 The median frame time is 16.67 ms, and p99 is 19.03 ms.
 The user confirmed that audio and video are correct.
 The first load still has isolated spikes.
-For details, see the [performance report](../../../.nitenphone/work/rhythm-heaven/reports/performance-20261016-134827/README.md).
+For details, see the [performance report](../../../.touchable/work/rhythm-heaven/reports/performance-20261016-134827/README.md).
 
 For past changes, test conditions, and installation records, see [HISTORY.md](HISTORY.md).
 
 2026-10-17: Old builds were removed at the request of the user.
-The latest local build is in `.nitenphone/build/games/rhythm-heaven/ipad-device-build26/`.
-The checksum records of old IPAs and old build logs are kept in `.nitenphone/build/games/rhythm-heaven/logs/retired-builds-20261017/`.
+The latest local build is in `.touchable/build/games/rhythm-heaven/ipad-device-build26/`.
+The checksum records of old IPAs and old build logs are kept in `.touchable/build/games/rhythm-heaven/logs/retired-builds-20261017/`.
 The old paths are only for the history record.
 For details, see the [build retention notes](../../../docs/developer/workspace-maintenance.md#latest-build-retention-2026-10-17).
 For the workspace reorganization rules, see the [maintenance notes](../../../docs/developer/workspace-maintenance.md).
@@ -356,13 +350,13 @@ For the workspace reorganization rules, see the [maintenance notes](../../../doc
 - Multiple rhythm games and some Remixes are verified. Build 15 verified touch in the rhythm archive, the music room, and demo videos. All levels, the multiplayer mode, and all extra modes are not yet tested one by one.
 - Bluetooth headphones increase audio latency. The game notes also state this.
 - The build 14 manual iPhone record covers the wipers game and multiple Remixes. In that record, the continuous slowdown from texture re-uploads did not occur again. The first load still has isolated spikes. This result does not prove that all levels play without stutter.
-- The picture stays at 16:9, without crop or stretch. The iPhone screen has letterbox borders on the two sides. In iPad landscape, there are letterbox borders at the top and bottom. A trial with a wider camera view (Mac host) showed that the scene art stops at the 16:9 edge. There is no content on the two sides. The record is in `.nitenphone/work/rhythm-heaven/reports/widescreen-trial-20261014/`.
+- The picture stays at 16:9, without crop or stretch. The iPhone screen has letterbox borders on the two sides. In iPad landscape, there are letterbox borders at the top and bottom. A trial with a wider camera view (Mac host) showed that the scene art stops at the 16:9 edge. There is no content on the two sides. The record is in `.touchable/work/rhythm-heaven/reports/widescreen-trial-20261014/`.
 - iPad is tested only on iPad mini (iPad16,2). Other iPad sizes are not tested. The app forces landscape full screen. `UIRequiresFullScreen` is deprecated from iOS 26. A future system can ignore this key.
 - The build 30 border glow ran on the iPhone (the user). GPU p50 is about 2.1 ms. The 0.06-second time constant of build 31 and the seam transition of build 32 are checked only in Mac unit tests and offline renders. The falloff curve, blur width, brightness limit, and time constant are tuned by eye. There is no HDR or colorimeter measurement. When the picture edge is black, the letterbox border is also almost black.
 - The Rhythm Heaven Mac host runs in command-line mode. It does not present to a window. Thus host runs do not use the letterbox border code.
 - Controller haptics are tested only with DualSense and iPad mini. Other controllers, iPhone with a controller, controller disconnect and reconnect, and long continuous haptics are not tested one by one.
 - Device screenshots confirm the language setting entry. The language selection row was not tapped automatically. Device language tests use the `-AppleLanguages` launch argument. Only six of the 13 languages are checked one by one.
-- The Bundle ID temporarily borrows `com.mmmz.NitenphoneSilksong`. Before a change, a save migration is necessary.
+- The Bundle ID changed to `com.mmmz.TouchableRhythmHeaven` on 2026-10-20. The installed apps use the previous Bundle ID. Move the save to the new app after the first install.
 - The build 28 Liquid Glass is checked only in the iOS Simulator. The appearance and the dark layer on the iPhone are not confirmed. The build 34 system press effect is checked only with one finger in the Simulator. A two-finger simultaneous press and the feel on the iPhone are not confirmed. Faded directions are not glass and show no effect when pressed.
 - The build 29 BeatSpell changes are checked only on the Mac host and in the iOS Simulator. There are no iPhone frame time or feel results. The host tested only the first battle of chapter 1 and the tutorial. Backflip, branches, items, and the map are not tested one by one.
 - In BeatSpell, the small D-pad covers part of the HP display at the bottom-left corner. On iPad, it covers more. The BeatSpell items, map, and swap magic menus are not tapped directly.
@@ -414,7 +408,7 @@ In these levels, the original large touch area on the left half is hidden.
 A tap on empty space does not trigger the D-pad.
 Single-direction levels still use the original single-key area.
 A Remix also uses the small D-pad when it reads two or more directions.
-For the detailed check, see the [small D-pad record](../../../.nitenphone/work/rhythm-heaven/reports/multidirection-dpad-20261016/README.md).
+For the detailed check, see the [small D-pad record](../../../.touchable/work/rhythm-heaven/reports/multidirection-dpad-20261016/README.md).
 
 Build 11 adjusts the small D-pad appearance to the direction needs of the current level.
 Unused directions have 25% of the original overall opacity.
@@ -424,7 +418,7 @@ The tap areas and key functions of the four directions keep the original values.
 A Remix updates with the union of directions from the scenes read so far.
 Modes with unknown direction needs keep the original display level for all four directions.
 Build 28 no longer decreases opacity. Unused directions now have an appearance without glass.
-For the detailed check, see the [D-pad opacity record](../../../.nitenphone/work/rhythm-heaven/reports/unused-directions-20261016/README.md).
+For the detailed check, see the [D-pad opacity record](../../../.touchable/work/rhythm-heaven/reports/unused-directions-20261016/README.md).
 
 The direction keys use the level display rules of build 9.
 The direction keys show only when the current level state is valid.
@@ -433,7 +427,7 @@ The direction keys are hidden when the screen data is out of date.
 When the level display state ends, keys that were held are released.
 On the opening screen, you can still tap the right half to continue.
 This rule applies only to the `rhythm` layout.
-For the build 8 menu detection and the build 9 level detection, see the [hidden-by-default record](../../../.nitenphone/work/rhythm-heaven/reports/level-controls-20261016/README.md).
+For the build 8 menu detection and the build 9 level detection, see the [hidden-by-default record](../../../.touchable/work/rhythm-heaven/reports/level-controls-20261016/README.md).
 
 Build 12 keeps the trigger area of the right-side A. It removes the always-visible letter, the border, and the full-area press background.
 A white radial glow shows at the touch point. The letter A is above the finger.
@@ -441,7 +435,7 @@ When the finger moves, the feedback follows the touch point.
 After release, the feedback fades out within 0.16 seconds.
 Each finger shows its own feedback.
 B, +, and − become always-visible letterbox border buttons. Y shows with the tutorial demonstration hint.
-For the detailed check, see the [touch feedback record](../../../.nitenphone/work/rhythm-heaven/reports/touch-feedback-20261016/README.md).
+For the detailed check, see the [touch feedback record](../../../.touchable/work/rhythm-heaven/reports/touch-feedback-20261016/README.md).
 
 Build 13 uses the same feedback for the single-key area on the left half.
 The left side no longer always shows the letter, the border, and the full-area press background.
@@ -452,7 +446,7 @@ When you hold A on both sides, release of one side keeps the input of the other 
 Y shows according to the native tutorial enable state.
 When the demonstration hint alternates with the skip hint, Y stays visible.
 When the interactive tutorial phase ends or the pause menu opens, Y is hidden.
-For the detailed check, see the [left-side glow and tutorial Y record](../../../.nitenphone/work/rhythm-heaven/reports/steady-touch-20261016/README.md).
+For the detailed check, see the [left-side glow and tutorial Y record](../../../.touchable/work/rhythm-heaven/reports/steady-touch-20261016/README.md).
 
 Direct touch in build 7:
 
@@ -470,14 +464,14 @@ Implementation: when the host opens game files, `internal/games/rhythm-heaven/ru
 
 The first item of the start menu, "What is Rhythm Heaven?", plays an introduction. Tap "Single player" to go to the level map. You can also press ▼ and then A.
 
-2026-10-16: The [menu tap investigation](../../../.nitenphone/work/rhythm-heaven/reports/menu-touch-20261016/README.md) and the first implementation are complete. `rh_menu.c` reads the current menu, map, and hint nodes. It reuses the select, confirm, and button input flow of the game. The game module files are not changed. The fixed addresses apply only to the current v0 module. The shared touch-point queue is in `internal/runtime/common/ss_pointer.c`. The iPhone touch-point entry is in `internal/platform/ios/App.m`. For detailed tests and coverage limits, see the [implementation record](../../../.nitenphone/work/rhythm-heaven/reports/menu-touch-implementation-20261016/README.md). The extra modes and all pop-ups are not yet tested one by one.
+2026-10-16: The [menu tap investigation](../../../.touchable/work/rhythm-heaven/reports/menu-touch-20261016/README.md) and the first implementation are complete. `rh_menu.c` reads the current menu, map, and hint nodes. It reuses the select, confirm, and button input flow of the game. The game module files are not changed. The fixed addresses apply only to the current v0 module. The shared touch-point queue is in `internal/runtime/common/ss_pointer.c`. The iPhone touch-point entry is in `internal/platform/ios/App.m`. For detailed tests and coverage limits, see the [implementation record](../../../.touchable/work/rhythm-heaven/reports/menu-touch-implementation-20261016/README.md). The extra modes and all pop-ups are not yet tested one by one.
 
 ## Unlock all levels
 
 `internal/games/rhythm-heaven/tools/unlock_all.py` changes the save `game_save.bin`. It unlocks all 80 rhythm games and Remixes of the main world, the 30 levels of the reverse world, and the 13 menu items on the left side of the level map. (On the Mac, Rhythm Toys was confirmed to appear. The mapping of the other items is a guess from the name table and is not verified one by one.) Cleared levels and earned medals do not change.
 
 ```sh
-.nitenphone/venv/bin/python internal/games/rhythm-heaven/tools/unlock_all.py original-save/game_save.bin --output new-directory/game_save.bin
+.touchable/venv/bin/python internal/games/rhythm-heaven/tools/unlock_all.py original-save/game_save.bin --output new-directory/game_save.bin
 ```
 
 Save format (from the save management code in `main` at main+0x3ca0 and main+0x3f70):
@@ -492,13 +486,13 @@ Save format (from the save management code in `main` at main+0x3ca0 and main+0x3
 
 The mapping between levels and numbers is in the level table of `main` (from main+0xd19108, 0x30 bytes per entry).
 
-On 2026-10-14, this was done on the phone save. The original save is backed up in `.nitenphone/work/rhythm-heaven/saves/phone-backup-20261014-before-unlock/`. The unlocked save is in `.nitenphone/work/rhythm-heaven/saves/phone-unlocked-20261014/`. The same change was tried on the Mac: the level map showed all 8 columns of levels marked NEW, the menu items appeared on the left side, and THE A in column 6 played correctly.
+On 2026-10-14, this was done on the phone save. The original save is backed up in `.touchable/work/rhythm-heaven/saves/phone-backup-20261014-before-unlock/`. The unlocked save is in `.touchable/work/rhythm-heaven/saves/phone-unlocked-20261014/`. The same change was tried on the Mac: the level map showed all 8 columns of levels marked NEW, the menu items appeared on the left side, and THE A in column 6 played correctly.
 
 Before you replace the phone save, close the game. Then write to the committed path `Documents/Saves/RhythmHeaven/game_save.bin` (at start, the game copies `.work` from this file):
 
 ```sh
 xcrun devicectl device copy to --device DEVICE_ID --domain-type appDataContainer \
-  --domain-identifier com.mmmz.NitenphoneSilksong --source new-save/game_save.bin \
+  --domain-identifier com.mmmz.TouchableRhythmHeaven --source new-save/game_save.bin \
   --destination Documents/Saves/RhythmHeaven/game_save.bin
 ```
 
@@ -513,7 +507,7 @@ Existing `8` and `9` states do not change.
 This option does not open additional P+ modes.
 
 ```sh
-.nitenphone/venv/bin/python internal/games/rhythm-heaven/tools/unlock_all.py original-save/game_save.bin \
+.touchable/venv/bin/python internal/games/rhythm-heaven/tools/unlock_all.py original-save/game_save.bin \
   --perfect-only --output new-directory/game_save.bin
 ```
 
@@ -523,44 +517,44 @@ Thus the map also shows the P mark and counts the total medals as 80.
 This address applies only to the v0 module recorded in the configuration.
 
 On 2026-10-16, the phone save was updated. The app was still build 7.
-The original save is in `.nitenphone/work/rhythm-heaven/saves/phone-backup-20261016-before-perfect/`.
-The changed version is in `.nitenphone/work/rhythm-heaven/saves/phone-perfect-unlocked-20261016/`.
+The original save is in `.touchable/work/rhythm-heaven/saves/phone-backup-20261016-before-perfect/`.
+The changed version is in `.touchable/work/rhythm-heaven/saves/phone-perfect-unlocked-20261016/`.
 The read-back check after the write matched. The change touches only 80 state bytes.
 After the iPhone committed the save again, the 80 states were still `7`.
 The Mac verified the P selection menu and level load.
 The iPhone log recorded two level taps, a selection of the P item, and a level load.
 The challenges were not completed level by level.
-For tests, screenshots, and restore instructions, see the [P mode record](../../../.nitenphone/work/rhythm-heaven/reports/perfect-unlock-20261016/README.md).
+For tests, screenshots, and restore instructions, see the [P mode record](../../../.touchable/work/rhythm-heaven/reports/perfect-unlock-20261016/README.md).
 
 ## iPhone/iPad build and installation
 
-In early builds, Xcode was not signed in to an Apple ID. The current app uses the existing provisioning profile `com.mmmz.NitenphoneSilksong` (team `<TEAM_ID>`, current expiry date 2026-10-25). Silksong uses `com.mmmz.NitenphoneProbe` and is not affected. The save is in `Documents/Saves/RhythmHeaven` in the container of this app. Before a build, check the actual signing and provisioning profile.
+The Bundle ID is `com.mmmz.TouchableRhythmHeaven`. Silksong uses `com.mmmz.TouchableSilksong`. Each Bundle ID needs its own provisioning profile (team `<TEAM_ID>`). Builds before 2026-10-20 used a borrowed previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md). The save is in `Documents/Saves/RhythmHeaven` in the container of this app. Before a build, check the actual signing and provisioning profile.
 
 ```sh
-.nitenphone/venv/bin/python internal/tools/prepare_ios.py --game rhythm-heaven
-xcodebuild -project .nitenphone/build/games/rhythm-heaven/ios-project/RhythmHeaven.xcodeproj -scheme RhythmHeaven \
-  -configuration Debug -sdk iphoneos -derivedDataPath .nitenphone/build/games/rhythm-heaven/ios \
+.touchable/venv/bin/python internal/tools/prepare_ios.py --game rhythm-heaven
+xcodebuild -project .touchable/build/games/rhythm-heaven/ios-project/RhythmHeaven.xcodeproj -scheme RhythmHeaven \
+  -configuration Debug -sdk iphoneos -derivedDataPath .touchable/build/games/rhythm-heaven/ios \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM=<TEAM_ID> build
-APP=.nitenphone/build/games/rhythm-heaven/ios/Build/Products/Debug-iphoneos/RhythmHeaven.app
+APP=.touchable/build/games/rhythm-heaven/ios/Build/Products/Debug-iphoneos/RhythmHeaven.app
 cp "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/<profile UUID>.mobileprovision" "$APP/embedded.mobileprovision"
 codesign --force --sign "Apple Development" --entitlements entitlements.plist --generate-entitlement-der "$APP"
 xcrun devicectl device install app --device DEVICE_ID "$APP"
 ```
 
-`entitlements.plist` is the same as for Silksong. It contains only `application-identifier` (`<TEAM_ID>.com.mmmz.NitenphoneSilksong`), `com.apple.developer.team-identifier`, and `get-task-allow`. The app is about 3.2 GB. Installation takes a few minutes.
+`entitlements.plist` is the same as for Silksong. It contains only `application-identifier` (`<TEAM_ID>.com.mmmz.TouchableRhythmHeaven`), `com.apple.developer.team-identifier`, and `get-task-allow`. The app is about 3.2 GB. Installation takes a few minutes.
 
 Build 27 and build 28 use Xcode automatic signing.
 The provisioning profile includes both the original iPhone and the iPad mini.
 Build 27 is installed on the iPad mini. Build 28 is installed on the iPhone.
 The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build28-liquid-glass-20261018.ipa`.
 The launcher action "Install existing IPA" can install it. The launcher build actions now refuse Rhythm Heaven. See the known limits.
-The build 27 IPA is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build28/`.
-The build 26 IPA is moved to `.nitenphone/archive/ipa/rhythm-heaven/before-build27/`.
-The build 19 and build 20 IPAs are kept in `.nitenphone/archive/ipa/rhythm-heaven/before-build26/`.
+The build 27 IPA is moved to `.touchable/archive/ipa/rhythm-heaven/before-build28/`.
+The build 26 IPA is moved to `.touchable/archive/ipa/rhythm-heaven/before-build27/`.
+The build 19 and build 20 IPAs are kept in `.touchable/archive/ipa/rhythm-heaven/before-build26/`.
 
 Before the reorganization, the phone had build 15.
 The IPA at that time was `RhythmHeaven-build15-extra-menu-touch.ipa`.
-That IPA and its signing and checksum records are moved to `.nitenphone/archive/ipa/rhythm-heaven/`.
+That IPA and its signing and checksum records are moved to `.touchable/archive/ipa/rhythm-heaven/`.
 For the installation and save checks of builds 1–14, see the [build record](HISTORY.md).
 For that history phase, only the build 15 IPA and the latest local build of that time are kept.
 
@@ -570,10 +564,10 @@ The game log is at `Documents/Logs/game.log` in the app container:
 
 ```sh
 xcrun devicectl device copy from --device DEVICE_ID --domain-type appDataContainer \
-  --domain-identifier com.mmmz.NitenphoneSilksong --source Documents/Logs/game.log --destination game.log
+  --domain-identifier com.mmmz.TouchableRhythmHeaven --source Documents/Logs/game.log --destination game.log
 ```
 
-After Xcode is signed in to an Apple ID, change `bundle_id` in `game.json` to `com.mmmz.NitenphoneRhythmHeaven`. Then rebuild with automatic signing. With a new ID, the app is a different app. Copy the old save from the old container. When the provisioning profile expires, sign and install the app again.
+The first build with `com.mmmz.TouchableRhythmHeaven` installs as a different app. Copy the old save from the old container into the new app. When the provisioning profile expires, sign and install the app again.
 
 ## Move to another Mac
 
@@ -582,8 +576,8 @@ The transfer tool packages only the Rhythm Heaven game data. It keeps the curren
 The original NSP, keys, signing material, IPAs, and personal saves are not put in the transfer package.
 
 ```sh
-.nitenphone/venv/bin/python internal/tools/package_mac_transfer.py --game rhythm-heaven \
-  --output .nitenphone/build/transfers/rhythm-heaven-build15-mac
+.touchable/venv/bin/python internal/tools/package_mac_transfer.py --game rhythm-heaven \
+  --output .touchable/build/transfers/rhythm-heaven-build15-mac
 ```
 
 Copy the generated ZIP and SHA-256 files to the new Mac.
@@ -597,17 +591,17 @@ For the full procedure, see the [Mac transfer guide](../../../docs/developer/mac
 ## Rebuild from game files
 
 ```sh
-.nitenphone/venv/bin/python internal/tools/prepare_game.py extract \
+.touchable/venv/bin/python internal/tools/prepare_game.py extract \
   "MyGameFiles/rhythm-heaven/Rhythm Heaven Groove [0100D9F01D474000][v0][Base][Conv].nsp" \
   --game rhythm-heaven --keys MyGameFiles/keys/ProdKeys.-v22.5.0/prod.keys
-.nitenphone/venv/bin/python internal/tools/analyze_game.py --game rhythm-heaven
-.nitenphone/venv/bin/python internal/tools/rewrite_game.py --game rhythm-heaven --jobs 8
-.nitenphone/venv/bin/python internal/tools/extract_shaders.py --game rhythm-heaven
-.nitenphone/venv/bin/python internal/tools/build_shaders.py --game rhythm-heaven --ios
+.touchable/venv/bin/python internal/tools/analyze_game.py --game rhythm-heaven
+.touchable/venv/bin/python internal/tools/rewrite_game.py --game rhythm-heaven --jobs 8
+.touchable/venv/bin/python internal/tools/extract_shaders.py --game rhythm-heaven
+.touchable/venv/bin/python internal/tools/build_shaders.py --game rhythm-heaven --ios
 bash internal/tools/build_host.sh --game rhythm-heaven
-mkdir -p .nitenphone/work/rhythm-heaven/temp
-TASK_SAVE_DIR=$(mktemp -d .nitenphone/work/rhythm-heaven/temp/host-check.XXXXXX)
-.nitenphone/venv/bin/python internal/tools/run_host.py --game rhythm-heaven --seconds 60 --save-dir "$TASK_SAVE_DIR"
+mkdir -p .touchable/work/rhythm-heaven/temp
+TASK_SAVE_DIR=$(mktemp -d .touchable/work/rhythm-heaven/temp/host-check.XXXXXX)
+.touchable/venv/bin/python internal/tools/run_host.py --game rhythm-heaven --seconds 60 --save-dir "$TASK_SAVE_DIR"
 ```
 
 At run time, use `internal/tools/input_host.py --game rhythm-heaven A` to press keys. `SS_AUDIO_DUMP=out.wav` writes the mix result to a WAV file. `DM_AUDIO=1` plays audio on the Mac.
@@ -639,7 +633,7 @@ This NSP was converted from a game card XCI. The conversion changed the distribu
 | `internal/runtime/common/ss_input.c` | Dual Joy-Con state, controller setup screen, short-press hold |
 | `internal/tools/extract_shaders.py` | BNSH shader extraction |
 | `internal/tools/build_shaders.py` | NVN binding layout, vertex attribute types, lower-left origin flip |
-| `.nitenphone/dependencies/d2r-mobile/dm/gfx/nvn/` | Automatic block height round-down (`nvn_tex.c`), release of the texture-ID cache view when a texture is destroyed (`nvn_mtl.m`), 16-byte texture views of the new SDK, depth clamp, texture view channel swizzle, scaled copy, linear textures, shared page write-protect fix |
+| `.touchable/dependencies/d2r-mobile/dm/gfx/nvn/` | Automatic block height round-down (`nvn_tex.c`), release of the texture-ID cache view when a texture is destroyed (`nvn_mtl.m`), 16-byte texture views of the new SDK, depth clamp, texture view channel swizzle, scaled copy, linear textures, shared page write-protect fix |
 | `internal/platform/ios/App.m` | `rhythm` touch layout, native resolution canvas, audio buffer setting |
 | `internal/tests/common/test_audren.c` | Mixer tests: passthrough, counting, looping, pitch change, reverb dry path |
 
