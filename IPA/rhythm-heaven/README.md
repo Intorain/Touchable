@@ -1,15 +1,15 @@
 # Rhythm Heaven IPA
 
 This folder holds the current Rhythm Heaven package and its checksum records.
-The current package is build 34.
+The current package is build 35.
 It supports iPhone, iPad, a separate in-game language setting, controller haptics, and a live border glow.
 The touch buttons use Liquid Glass.
 Build 29 fixes BeatSpell performance and touch.
-Build 30 rewrites the border glow to make the light more natural. Build 31 makes the letterbox border follow the picture faster. Build 32 makes the transition between the picture edge and the letterbox border smoother. Build 33 declares Game Mode and stays at 60 Hz. In build 34, a pressed glass button shows only the system effect.
-The current IPA is `RhythmHeaven-build34-glass-press-20261019.ipa`.
-Its SHA-256 is `e00e8817f69e5ebfd2b4ec856bb7e4f65bf3f44b797debbededd65ea8a7f27c0`.
-Build 34 was checked only on the Mac host, in unit tests, and in the Simulator. It is not installed on a device yet.
-The iPhone has build 30. The iPad mini has build 27.
+Build 30 rewrites the border glow to make the light more natural. Build 31 makes the letterbox border follow the picture faster. Build 32 makes the transition between the picture edge and the letterbox border smoother. Build 33 declares Game Mode and stays at 60 Hz. In build 34, a pressed glass button shows only the system effect. Build 35 hides the touch controls on loading screens.
+The current IPA is `RhythmHeaven-build35-loading-controls-20261020.ipa`.
+Its SHA-256 is `a27ffc633e98f11fd7e68cec3deaca6452c15a1815812cef82452a9ade16f551`.
+Build 35 is installed on the iPhone and the iPad mini (2026-10-20).
+The build 34 IPA, JSON, and SHA-256 moved to `.touchable/archive/ipa/rhythm-heaven/before-build35/`.
 Controller haptics are verified only on the iPad mini with a DualSense.
 The build 33 IPA, JSON, and SHA-256 moved to `.touchable/archive/ipa/rhythm-heaven/before-build34/`.
 The build 32 IPA, JSON, and SHA-256 moved to `.touchable/archive/ipa/rhythm-heaven/before-build33/`.

@@ -1,5 +1,18 @@
 # Rhythm Heaven
 
+## 2026-10-20: Touch controls hidden on loading screens (build 35)
+
+In a Silksong session, the user asked that the touch controls show only when needed, also in Rhythm Heaven.
+Before the change, the small D-pad and B, −, + showed during screen changes, because no frame was published.
+`runtime/rh_game.c` now publishes `SS_POINTER_WAIT` when a screen archive under `graph/` opens and no menu or level frame is current. Remix scene archives during play do not count (`rh_touch_loading()` in `runtime/rh_touch.c`).
+The app hides the small D-pad, B, −, +, X, and Y during the load, and keeps the controls unchanged for 2.5 s after a menu or level frame stops (menu fade-out).
+Mac host tests at the iPhone and iPad aspects showed no D-pad between screens. A frame gap inside a level now keeps the level controls.
+The title screen ("press A") still shows the fallback D-pad.
+Build 35 (manual Xcode path) is installed on the iPhone and the iPad mini. The saves were backed up before the install and not restored.
+On the iPhone, the user played: the log shows the controls hidden at boot and in five screen changes, and not hidden for the remix scene archives during play. The iPad mini was not tested.
+The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build35-loading-controls-20261020.ipa` (SHA-256 `a27ffc633e98f11fd7e68cec3deaca6452c15a1815812cef82452a9ade16f551`). The build 34 IPA set moved to `.touchable/archive/ipa/rhythm-heaven/before-build35/`.
+Evidence: [the loading controls record](../../../.touchable/work/rhythm-heaven/reports/loading-controls-20261020/README.md).
+
 ## 2026-10-19: System glass press effect (build 34)
 
 In a Silksong session, the user asked for the glass effect of the touch buttons to match the official Apple buttons.
@@ -288,7 +301,7 @@ The records below do not include the short start check after this reorganization
 | Active content | `.touchable/work/rhythm-heaven/base/` |
 | Active modules | `.touchable/work/rhythm-heaven/patched/`, runs `main` and `sdk` |
 | Graphics | 1920×1080, NVN to Metal, 35 shader stages |
-| iPad/iPhone app | Build 34 (not installed. The iPhone has build 30, the iPad mini has build 27), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
+| iPad/iPhone app | Build 35 (installed on the iPhone and the iPad mini on 2026-10-20), Bundle ID `com.mmmz.TouchableRhythmHeaven` (installed builds before 2026-10-20 use the previous Bundle ID. See [the rename record](../../../docs/developer/project-rename.md)) |
 | Phone save | `Documents/Saves/RhythmHeaven` |
 | Play record | Multiple rhythm games, some Remixes, menus, and save read/write are recorded. The full play-through is not verified |
 | Direct touch | Normal lists, the map, pause options, the rhythm archive, the music room, and demo videos |
