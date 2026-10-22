@@ -248,8 +248,10 @@ static int list_frame(void *list, int scroll, ss_pointer_frame *frame) {
     trace_frame(frame);
     /* A long list can scroll past the rows that the game has laid out. Keep the
        empty menu frame so the phone does not show the fallback A and D-pad
-       areas. Those areas turn a continued drag into a button press. */
-    return 1;
+       areas. Those areas turn a continued drag into a button press. A short
+       menu without targets keeps the fallback, because it may be a menu that
+       this adapter cannot read. */
+    return scroll || frame->count > 0;
 }
 static int list_input(void *list, void *pad, int scroll, uintptr_t original) {
     ss_pointer_frame frame;
