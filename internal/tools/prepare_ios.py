@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 
+from build_shaders import check_metallib
 from workspace import ROOT, DEPENDENCIES, UPSTREAM, WorkspaceError, load_game, validate_registry
 
 
@@ -85,13 +86,19 @@ def stage_module_tables(patched, modules, names):
             if source.exists(): shutil.copy2(source, modules / source.name)
 
 
-def stage_shaders(shader_root, shaders, chain):
+def stage_shaders(shader_root, shaders, chain, minimum_ios=None):
     """Keep the current generated shader chain. Keep source chains intact."""
     source = shader_root / 'ios' / f'b-{chain}'
     if shader_root.resolve() == shaders.resolve():
         raise WorkspaceError('Source and generated shader directories must differ.')
     if not source.is_dir() or not (shader_root / 'shader_map.tsv').is_file():
         raise WorkspaceError('Build the iOS shaders first.')
+    if minimum_ios:
+        # A library for a newer iOS than the app's minimum does not load on the older system.
+        for library in source.glob('*.metallib'):
+            try: check_metallib(library, 'iphoneos', minimum_ios)
+            except ValueError as error:
+                raise WorkspaceError(str(error) + ' Rebuild the iOS shaders.') from None
     shaders.mkdir(parents=True, exist_ok=True)
     for stale in (shaders / 'ios').glob('b-*'):
         if stale.name != 'b-' + chain:
@@ -135,7 +142,7 @@ def main():
                                          str(patched), str(embedded), *game.module_names], text=True).split()
         sources.append(embedded)
         shaders = gen / 'Shaders'
-        stage_shaders(shader_root, shaders, chain)
+        stage_shaders(shader_root, shaders, chain, game.minimum_ios_version)
 
         with (ROOT / 'platform/ios/Info.plist').open('rb') as stream:
             info = plistlib.load(stream)
@@ -210,7 +217,9 @@ def main():
         settings = ''.join(f'{k}={quote(v)};' for k, v in common.items())
         includes = (gen, ROOT / 'runtime/common', game.game_dir / 'runtime', host, gfx / 'nvn/include', gfx / 'tex')
         settings += 'HEADER_SEARCH_PATHS=' + header_search_paths(includes) + ';'
-        cflags = ['-D' + define for define in game.compile_defines] + ['-Wno-unused-function', '-Wno-deprecated-declarations']
+        # An API newer than the deployment target must be guarded, or the app fails on the older iOS.
+        cflags = ['-D' + define for define in game.compile_defines] + ['-Wno-unused-function', '-Wno-deprecated-declarations',
+                                                                     '-Werror=unguarded-availability-new']
         settings += 'OTHER_CFLAGS=' + array(quote(v) for v in cflags) + ';'
         settings += 'OTHER_LDFLAGS=' + array(quote(v) for v in ldflags) + ';'
         configs = [obj('config:' + name, f'isa=XCBuildConfiguration; name={name}; buildSettings={{{settings}}};') for name in ('Debug', 'Release')]

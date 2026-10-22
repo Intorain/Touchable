@@ -103,7 +103,7 @@ The main upstream revision is `2eb5758771f110cd53082b999d88d242766610da`. [boots
 
 Use the top-level `Touchable.command` for user builds. It selects a game and an operation. It keeps signing settings in `.touchable/config.json`. Existing local Bundle IDs remain unchanged. New users receive a unique per-game Bundle ID.
 
-Use an Apple Silicon Mac, Xcode, and the local Python environment. Both manifests target iOS 26.0 and macOS 26.0. The game record describes tests with newer Xcode and device versions. Check the actual SDK, device, and signing profile before a device build.
+Use an Apple Silicon Mac, Xcode, and the local Python environment. Both manifests target iOS 26.0 and macOS 26.0. On 2026-10-21 the shader build was fixed for these targets. Before the fix, the Metal compiler used the SDK version, so Xcode 27 libraries targeted iOS 27, and iOS 26 showed a black game screen. The shader build, the iOS project generator, the runtime MSL options, and the availability warnings now hold both games to the deployment targets. See [the shader workflow](agent-workflow.md#change-graphics-or-shaders). No iOS 26 device test exists yet. The game record describes tests with newer Xcode and device versions. Check the actual SDK, device, and signing profile before a device build.
 
 [requirements.txt](../../internal/requirements.txt) pins Capstone 5.0.9, LZ4 4.4.5, Unicorn 2.1.4, and UnityPy 1.25.4. Silksong shader extraction uses UnityPy. Shader bootstrap also uses pinned .NET and SPIRV-Cross tools.
 
@@ -120,6 +120,7 @@ The existing build 8 report records two upstream graphics test limits: `t_refl` 
 ## Future work
 
 - Test the remaining Silksong flow and implement the skipped video path.
+- Start both games on an iOS 26 device after their next build. Check the log for shader load errors.
 - Confirm Game Mode and the glass press response of Rhythm Heaven build 35 on the device. Check the faster and smoother ambient bars and BeatSpell frame time and touch input on the iPhone.
 - Check the loading-screen controls on the iPad mini, and a Silksong fast travel and death on a device.
 - Confirm the Rhythm Heaven Liquid Glass controls on the iPhone.

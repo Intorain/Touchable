@@ -146,6 +146,17 @@ Rebuild shader inputs only when the task changes game content, shader capture, t
 
 `--ios` builds Mac and iOS libraries. The build writes `chain.json`, `shader_map.tsv`, and the game's generated shader chain header. Regenerate the iOS project after the chain changes. Preserve old shader chains needed for comparisons.
 
+Keep the shader libraries compatible with the oldest supported system:
+
+- `build_shaders.py` compiles with `-mios-version-min` and `-mmacosx-version-min` from `ios.deployment_target` and `host.deployment_target`. Without these options, the Metal compiler uses the SDK version. iOS 26 then rejects libraries from the iOS 27 SDK, and the game screen stays black.
+- `build_shaders.py` reads the header of each new library and stops if its OS version is newer than the deployment target.
+- `prepare_ios.py` refuses to stage iOS libraries that are newer than the deployment target.
+- The runtime compiles its own MSL with `nvn_msl_options()` from upstream `dm/gfx/nvn/nvn_msl.h`. This sets Metal 4.0, the language of iOS 26 and macOS 26. Change it together with the deployment target.
+- If a device rejects a compiled game shader library, the runtime compiles the `.metal` source beside it. It writes one red log line that starts with `编好的着色器库不能载入`.
+- The iOS and Mac host builds use `-Werror=unguarded-availability-new`. A call to an API that is newer than the deployment target must have an `@available` check.
+
+Check the target of a library with `xxd -s 11 -l 5 <file>.metallib`. Byte 0 is `82` for iOS or `81` for macOS. Bytes 1 and 3 are the major and minor OS version in hexadecimal (`1a` is 26).
+
 For render pass changes, compare the same scene and input with the previous behavior. `DM_NVN_RULER=1` supports an in-process image comparison. `DM_NVN_UBV=0` disables uniform snapshots for comparison. `DM_NVN_CLEAR_KEEP=0` lands pending clears in their own pass again when the same targets are set twice. `SS_QUEUE_WAIT_CPU=1` restores the prior queue wait behavior.
 
 The letterbox ambient bars use `DM_NVN_AMBIENT_BARS`.

@@ -28,7 +28,7 @@ static void ss_clear_attachment(const p_clear_color *color, const p_clear_ds *de
             "float2 p = float2((i << 1) & 2, i & 2) * 2.0 - 1.0; return float4(p, c.depth, 1); }\n"
             "fragment float4 ss_clear_fs(constant C &c [[buffer(0)]]) { return c.color; }\n";
         NSError *error = nil;
-        library = [g_dev newLibraryWithSource:source options:nil error:&error];
+        library = [g_dev newLibraryWithSource:source options:nvn_msl_options() error:&error];
         if (!library) MDIE("Clear shader: %s", error.localizedDescription.UTF8String);
         pipelines = [NSMutableDictionary dictionary]; states = [NSMutableDictionary dictionary];
     }

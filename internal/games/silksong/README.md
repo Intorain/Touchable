@@ -1,5 +1,9 @@
 **Silksong Switch → iPhone / iPad port workspace**
 
+## 2026-10-21: Shader libraries for iOS 26 (source and shader change, no build)
+
+On iOS 26 the game screen stayed black, with working audio and touch controls. The shader libraries targeted iOS 27, the version of the Xcode 27 SDK, and iOS 26 refused to load them. `build_shaders.py` now compiles for the manifest deployment targets (iOS 26.0, macOS 26.0) and checks each library header. `prepare_ios.py` refuses newer libraries. Runtime MSL compiles with Metal 4.0. A rejected library falls back to its `.metal` source. The iOS and host builds treat an unguarded new API as an error. The new chain is `a9bf9ac9ed21`. Mac host test, graphics tests, and an unsigned iOS build passed. No iOS 26 device was available, so the fix is not confirmed on iOS 26. Evidence: `.touchable/work/silksong/reports/ios26-metal-target-20261021/`.
+
 ## 2026-10-20: Build 28 installed on the iPhone and the iPad mini (wider view removed)
 
 User request: "undo wider view and install". Build 28 is build 27 without the camera zoom; the map changes stay. IPA: `IPA/silksong/Silksong-build28-20261020-220739-0b1591.ipa`. Silksong was closed on both devices.
