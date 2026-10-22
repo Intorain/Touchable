@@ -1,5 +1,56 @@
 # Rhythm Heaven
 
+## 2026-10-21: TV mode follows the audio output (build 38)
+
+The user asked to remove the mode button and to choose the mode from the audio output.
+- Handheld mode: built-in speaker, built-in receiver, wired headphones, USB audio, and line out.
+- TV mode: every other output, for example Bluetooth, AirPlay, and HDMI. In TV mode the game offers its latency calibration.
+- The app reads the output at launch (before the game starts), on each audio route change, and when the app becomes active. A change switches the game at once with `dm_opmode_set()` (build 37).
+- `game.json` `ios.tv_mode_audio_route` enables this (`TouchableTVModeAudioRoute` in Info.plist). Only Rhythm Heaven sets it. `DM_OPMODE` in the launch environment still wins for device tests.
+- Removed: the TV mode button, the saved `TouchableTVMode` setting, and the level flag that hid the button.
+- Device evidence from build 37: the user switched handheld → TV → handheld on the iPhone; the game took notification 30 both times.
+- Checks: 50 Python tests, `test_touch`, the App.m syntax check, both Mac host builds, the Mac live-switch test, and the Xcode device build (41 warnings) passed. The route detection itself was not tested on a device.
+Build 38 is installed on the iPhone (2026-10-21, second try; the first try lost the device connection and left build 37). The saves matched the backup `.touchable/saves/rhythm-heaven/phone-before-install-20261021-145922-75e359/`. Build 38 is also installed on the iPad mini (2026-10-21 21:49); its saves matched the backup `phone-before-install-20261021-214935-12b07d`. On the iPad, a remote launch logged `TV mode: launch handheld, audio output Speaker` and ran at a frame time p50 of 16.67 ms. A route change (Bluetooth) was not tested on a device. The iPad save had the cafe locked (menu entry 0 = 0); it was fixed afterwards (see the cafe section).
+The current IPA is `IPA/rhythm-heaven/RhythmHeaven-build38-tv-audio-route-20261021.ipa` (SHA-256 `e5d5269d9dd2aff4ad9e3aa6bf82fe59de4107b2193606eef3ed996643bc8e99`). The build 37 IPA set moved to `.touchable/archive/ipa/rhythm-heaven/before-build38/`.
+
+## 2026-10-21: TV mode switches without a restart (build 37)
+
+The TV button now changes the mode at once. A restart is no longer needed.
+- `dm_opmode_set()` in `ss_platform.c` changes the operation mode while the game runs, like docking a Switch. The game gets notification 30 (operation mode changed) after it enables that notification.
+- `ss_input.c` signals the controller style events, so the game reads the controller style again (handheld 0x2, full-key 0x1).
+- `App.m`: after the confirmation, the button calls `dm_opmode_set()`, changes its icon, and saves `TouchableTVMode` for the next launch.
+- Mac host test hook: `SS_OPMODE_FILE` names a file with 0 or 1. A change switches the mode.
+- Mac host (start menu): handheld → TV → handheld. Each time the log shows the change, the new controller style, and `the game took notification 30`. The game kept running, and A opened the level map in TV mode. See `.touchable/work/rhythm-heaven/reports/tv-live-20261021/`.
+- Not tested: whether the game offers the TV latency calibration after a live switch.
+- Checks: 50 Python tests, `test_touch`, the App.m syntax check, both Mac host builds, a 30 s Silksong host run (handheld, 120 Hz), and the Xcode device build passed.
+Build 37 is installed on the iPhone (2026-10-21). The saves matched the backup `.touchable/saves/rhythm-heaven/phone-before-install-20261021-144426-ab15f5/`. The iPad mini was unavailable and has build 35.
+The build 37 IPA `RhythmHeaven-build37-tv-live-20261021.ipa` (SHA-256 `07bd52d193a1b0b7107953a5231e1c5df2a917cc460b8dc0cd8ad41625c8a2ef`) is now in `.touchable/archive/ipa/rhythm-heaven/before-build38/`. The build 36 IPA set moved to `.touchable/archive/ipa/rhythm-heaven/before-build37/`.
+
+## 2026-10-21: Long list taps and optional TV mode (build 36)
+
+The user liked the ideas of pull requests #6 and #7 (sdmj76) and asked for them in the local code. Their code was used where it fits. The changes below differ from the pull requests.
+
+Long lists (`runtime/rh_menu.c`):
+- Before: in a scrolling list, only rows on the first page had a touch area. After the list scrolled, most visible rows could not be tapped.
+- Now each visible row gets its place from the first-page row position and the row spacing.
+- A scrolling list keeps an empty menu frame when no row is found, so a drag does not turn into an A or D-pad press.
+- Change from #7: a short (non-scrolling) list with no targets still returns no frame. The fallback A and D-pad stay for menus that the adapter cannot read.
+- Mac host: music room, category 单人游戏, 20 rows down (past 三只螃蟹): 11 tap targets instead of 2.
+
+Optional TV mode (`App.m`, `ss_platform.c`, `ss_input.c`, `ss_touch.h`, `rh_game.c`):
+- `nn::oe::GetOperationMode` follows `DM_OPMODE` (0 handheld, 1 TV). The default is handheld, so other games do not change.
+- In TV mode the game sees a full-key controller and offers its TV latency calibration at start.
+- A glass TV button shows outside levels and not during loads. A tap asks for confirmation and saves `TouchableTVMode`. The new mode starts with the next app launch.
+- `game.json` `ios.tv_mode_toggle` enables the button (`TouchableTVModeToggle` in Info.plist). Only Rhythm Heaven sets it.
+- Change from #6: on iPad the button is in the top bar, left of −. The #6 position was inside the game picture. It also hides during loads.
+- Mac host with `DM_OPMODE=1`: log `Operation mode: TV`, and the game opens the calibration screen ("请配合念4的声音按A哦"). Calibration was not completed in the test.
+- iOS Simulator (rhythm layout test app): the button is left of − on iPad mini and below − on iPhone.
+
+Checks: `test_menu`, `test_touch`, `test_touch_layout`, 50 Python tests, `games.py check`, Rhythm Heaven and Silksong Mac host builds, a 40 s Silksong host run (120 Hz, no red lines), and the Xcode device build (41 warnings, none in `App.m`) passed.
+Build 36 is installed on the iPhone (2026-10-21). The three save files matched the pre-install backup `.touchable/saves/rhythm-heaven/phone-before-install-20261021-142621-b0c6a1/`. The cafe stays unlocked. The iPad mini was unavailable, so it still has build 35.
+The build 36 IPA is `RhythmHeaven-build36-tv-mode-long-lists-20261021.ipa` (SHA-256 `c8641a7537daee532de405c8ce31c294ffd164071f1a9a719d78aee5bd5cbdf5`), now in `.touchable/archive/ipa/rhythm-heaven/before-build37/`. The build 35 IPA set moved to `.touchable/archive/ipa/rhythm-heaven/before-build36/`.
+Evidence: [the review record](../../../.touchable/work/rhythm-heaven/reports/pr-review-20261021/README.md).
+
 ## 2026-10-21: Cafe unlocked in the phone save
 
 The user reported that the cafe (咖啡店) could not be unlocked.
@@ -8,7 +59,8 @@ The game unlocks the cafe after an early event. In the phone save, all stages we
 The tool now unlocks entries 0–12 and leaves the `dummy` entry 13 unchanged. On a save that the old tool changed, it changes only the cafe byte (0x28: 0 → 3).
 Mac host test with a copy of the phone save: with the fix, the cafe item (coffee cup, "new" badge) shows in the menu column of the level map. Without the fix, it does not show. The cafe itself was not entered in the test.
 On 2026-10-21, the fixed save was written to the iPhone (`Documents/Saves/RhythmHeaven` and `.work`). The game was closed. The read-back matched.
-The backup is in `.touchable/saves/rhythm-heaven/phone-before-cafe-fix-20261021/`. The iPad mini save was not changed.
+The backup is in `.touchable/saves/rhythm-heaven/phone-before-cafe-fix-20261021/`.
+On 2026-10-21 (21:5x), the same fix was applied to the iPad mini save at the user's request. The game was closed. The fixed tool changed only byte 0x28 (0 → 3). Both save copies read back equal. The backup is in `.touchable/saves/rhythm-heaven/ipad-before-cafe-fix-20261021/`.
 Evidence: [the cafe record](../../../.touchable/work/rhythm-heaven/reports/cafe-unlock-20261021/README.md).
 
 ## 2026-10-21: Simplified Chinese with a Hong Kong or Taiwan region (source change, no build)

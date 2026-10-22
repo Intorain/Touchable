@@ -25,6 +25,31 @@ void ss_display_set_hz(int hz);
    rate that the screen gives: 60 Hz in Low Power Mode, when the device is hot, or on a 60 Hz screen. */
 static int displayHzWanted = 60;
 
+/* TV mode follows the audio output when TouchableTVModeAudioRoute is set in Info.plist (only Rhythm Heaven).
+   The built-in speaker, wired headphones, USB audio, and line out are handheld mode. Bluetooth,
+   AirPlay, HDMI, and other outputs are TV mode, where the game offers its latency calibration. */
+static BOOL tvModeAudioRoute;
+void dm_opmode_set(int mode);
+static BOOL audioRouteIsTV(AVAudioSessionRouteDescription *route) {
+    NSSet *handheld = [NSSet setWithObjects:AVAudioSessionPortBuiltInSpeaker, AVAudioSessionPortBuiltInReceiver,
+                                            AVAudioSessionPortHeadphones, AVAudioSessionPortUSBAudio, AVAudioSessionPortLineOut, nil];
+    for (AVAudioSessionPortDescription *port in route.outputs) if (![handheld containsObject:port.portType]) return YES;
+    return NO;
+}
+static NSString *audioRouteName(AVAudioSessionRouteDescription *route) {
+    NSMutableArray *names = [NSMutableArray array];
+    for (AVAudioSessionPortDescription *port in route.outputs) [names addObject:port.portType];
+    return [names componentsJoinedByString:@","];
+}
+/* Switch the game while it runs, like docking a Switch (dm_opmode_set). Any thread. */
+static void followAudioRoute(const char *why) {
+    if (!tvModeAudioRoute) return;
+    AVAudioSessionRouteDescription *route = AVAudioSession.sharedInstance.currentRoute;
+    BOOL tv = audioRouteIsTV(route);
+    fprintf(stderr, "TV mode: audio output %s -> %s (%s)\n", audioRouteName(route).UTF8String, tv ? "TV" : "handheld", why);
+    dm_opmode_set(tv);
+}
+
 static CAMetalLayer *gameLayer;
 static UIViewController *gameController;
 static uint64_t touchButtons;
@@ -1136,7 +1161,11 @@ static void *runGame(void *unused) {
 /* Put a dark circle behind each visible glass control. */
 - (void)updateDimming {
     CGMutablePathRef path = CGPathCreateMutable();
-    NSMutableArray<UIView *> *views = [NSMutableArray arrayWithObjects:self.dpad, self.backButton, self.skipButton, self.padToggle, nil];
+    NSMutableArray<UIView *> *views = [NSMutableArray array];
+    if (self.dpad) [views addObject:self.dpad];
+    if (self.backButton) [views addObject:self.backButton];
+    if (self.skipButton) [views addObject:self.skipButton];
+    if (self.padToggle) [views addObject:self.padToggle];
     [views addObjectsFromArray:self.buttons];
     for (UIView *view in views) {
         BOOL glass = ![view isKindOfClass:PadButton.class] || ((PadButton *)view).glassShown;
@@ -1323,7 +1352,7 @@ static void *runGame(void *unused) {
     if (gameStarted) { dm_focus_set(0); dm_audio_suspend(1); dm_gfx_suspend(1); }
 }
 - (void)sceneDidBecomeActive:(UIScene *)scene {
-    if (gameStarted) { dm_gfx_suspend(0); dm_audio_suspend(0); dm_focus_set(1); }
+    if (gameStarted) { dm_gfx_suspend(0); dm_audio_suspend(0); dm_focus_set(1); followAudioRoute("app active"); }
 }
 @end
 
@@ -1331,6 +1360,8 @@ static void *runGame(void *unused) {
 @end
 @implementation GameDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)options {
+    tvModeAudioRoute = [[NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableTVModeAudioRoute"] boolValue];
+    BOOL launchModeSet = getenv("DM_OPMODE") != NULL;   /* devicectl or Xcode launch environment */
     NSFileManager *fm = NSFileManager.defaultManager;
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
     NSString *bundle = NSBundle.mainBundle.resourcePath;
@@ -1394,6 +1425,15 @@ static void *runGame(void *unused) {
     NSNumber *ioBuffer = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableAudioIOBufferDuration"];
     if (ioBuffer) [audio setPreferredIOBufferDuration:ioBuffer.doubleValue error:nil];
     [audio setActive:YES error:nil];
+    if (tvModeAudioRoute) {
+        /* The start mode comes from the audio output. A launch environment (DM_OPMODE from devicectl) wins for tests. */
+        AVAudioSessionRouteDescription *route = audio.currentRoute;
+        if (!launchModeSet) setenv("DM_OPMODE", audioRouteIsTV(route) ? "1" : "0", 1);
+        fprintf(stderr, "TV mode: launch %s, audio output %s\n", atoi(getenv("DM_OPMODE") ?: "0") ? "TV" : "handheld", audioRouteName(route).UTF8String);
+        [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionRouteChangeNotification object:audio queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            followAudioRoute("route change");
+        }];
+    }
     ss_haptics_ios_init();
     [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audio queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
         BOOL paused = [note.userInfo[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan;
