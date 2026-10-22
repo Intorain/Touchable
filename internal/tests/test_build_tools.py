@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from prepare_ios import (shell_controller_haptics, shell_localizations,
-                         shell_tv_mode_toggle, stage_module_tables, stage_shaders)
+                         shell_tv_mode_audio_route, stage_module_tables, stage_shaders)
 from workspace import ROOT, WorkspaceError
 
 
@@ -45,11 +45,11 @@ class GeneratedResourceTests(unittest.TestCase):
         with self.assertRaises(WorkspaceError):
             shell_controller_haptics({'controller_haptics': 'yes'})
 
-    def test_tv_mode_toggle_is_an_optional_boolean(self):
+    def test_tv_mode_audio_route_is_an_optional_boolean(self):
         data = json.loads((ROOT / 'games/rhythm-heaven/game.json').read_text())
-        self.assertTrue(shell_tv_mode_toggle(data['ios']))
-        self.assertFalse(shell_tv_mode_toggle({}))
+        self.assertTrue(shell_tv_mode_audio_route(data['ios']))
+        self.assertFalse(shell_tv_mode_audio_route({}))
         with self.assertRaises(WorkspaceError):
-            shell_tv_mode_toggle({'tv_mode_toggle': 'yes'})
+            shell_tv_mode_audio_route({'tv_mode_audio_route': 'yes'})
 
 if __name__ == '__main__': unittest.main()

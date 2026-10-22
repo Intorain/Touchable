@@ -18,12 +18,7 @@ static void rh_fs_open(const char *path) {
     pthread_mutex_lock(&touch_lock);
     int loading = rh_touch_loading(&touch_state, path);
     int changed = rh_touch_path(&touch_state, path, &hint);
-    int active = touch_state.active;
     pthread_mutex_unlock(&touch_lock);
-    if (active != ss_touch_level_get()) {
-        ss_touch_level_set(active);
-        LOG("Level state: %s", active ? "in level" : "outside level");
-    }
     /* A screen change without a current menu or level frame is a load or a fade.
        The phone then hides its touch controls (ss_pointer_controls). */
     ss_pointer_frame frame;

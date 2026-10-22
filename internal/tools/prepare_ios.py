@@ -42,10 +42,11 @@ def shell_controller_haptics(shell):
     return value
 
 
-def shell_tv_mode_toggle(shell):
-    value = shell.get('tv_mode_toggle', False)
+def shell_tv_mode_audio_route(shell):
+    """Optional TV mode that follows the audio output. The value must be a boolean."""
+    value = shell.get('tv_mode_audio_route', False)
     if not isinstance(value, bool):
-        raise WorkspaceError('ios.tv_mode_toggle must be true or false.')
+        raise WorkspaceError('ios.tv_mode_audio_route must be true or false.')
     return value
 
 
@@ -148,7 +149,7 @@ def main():
         if shell.get('touch_layout'): info['TouchableTouchLayout'] = shell['touch_layout']
         if shell.get('native_drawable'): info['TouchableNativeDrawable'] = True
         if shell_controller_haptics(shell): info['TouchableControllerHaptics'] = True
-        if shell_tv_mode_toggle(shell): info['TouchableTVModeToggle'] = True
+        if shell_tv_mode_audio_route(shell): info['TouchableTVModeAudioRoute'] = True
         localizations = shell_localizations(shell)
         if localizations:
             info['CFBundleLocalizations'] = localizations

@@ -25,9 +25,30 @@ void ss_display_set_hz(int hz);
    rate that the screen gives: 60 Hz in Low Power Mode, when the device is hot, or on a 60 Hz screen. */
 static int displayHzWanted = 60;
 
-/* TV mode is an optional per-game feature. TouchableTVModeToggle in Info.plist enables it. The
-   launch mode is saved in NSUserDefaults. The game reads DM_OPMODE at start-up. */
-static BOOL tvModeToggle, tvModeOn;
+/* TV mode follows the audio output when TouchableTVModeAudioRoute is set in Info.plist (only Rhythm Heaven).
+   The built-in speaker, wired headphones, USB audio, and line out are handheld mode. Bluetooth,
+   AirPlay, HDMI, and other outputs are TV mode, where the game offers its latency calibration. */
+static BOOL tvModeAudioRoute;
+void dm_opmode_set(int mode);
+static BOOL audioRouteIsTV(AVAudioSessionRouteDescription *route) {
+    NSSet *handheld = [NSSet setWithObjects:AVAudioSessionPortBuiltInSpeaker, AVAudioSessionPortBuiltInReceiver,
+                                            AVAudioSessionPortHeadphones, AVAudioSessionPortUSBAudio, AVAudioSessionPortLineOut, nil];
+    for (AVAudioSessionPortDescription *port in route.outputs) if (![handheld containsObject:port.portType]) return YES;
+    return NO;
+}
+static NSString *audioRouteName(AVAudioSessionRouteDescription *route) {
+    NSMutableArray *names = [NSMutableArray array];
+    for (AVAudioSessionPortDescription *port in route.outputs) [names addObject:port.portType];
+    return [names componentsJoinedByString:@","];
+}
+/* Switch the game while it runs, like docking a Switch (dm_opmode_set). Any thread. */
+static void followAudioRoute(const char *why) {
+    if (!tvModeAudioRoute) return;
+    AVAudioSessionRouteDescription *route = AVAudioSession.sharedInstance.currentRoute;
+    BOOL tv = audioRouteIsTV(route);
+    fprintf(stderr, "TV mode: audio output %s -> %s (%s)\n", audioRouteName(route).UTF8String, tv ? "TV" : "handheld", why);
+    dm_opmode_set(tv);
+}
 
 static CAMetalLayer *gameLayer;
 static UIViewController *gameController;
@@ -841,7 +862,6 @@ static void *runGame(void *unused) {
 @property(nonatomic, strong) PadButton *backButton;
 @property(nonatomic, strong) PadButton *skipButton;   /* A in a cutscene that the game can skip */
 @property(nonatomic, strong) UIButton *padToggle;
-@property(nonatomic, strong) UIButton *tvModeButton;   /* shown outside levels */
 @property(nonatomic) BOOL padInMenu;      /* the player showed the pad in a touch menu */
 @property(nonatomic) BOOL touchMenu;      /* the pad is hidden for a touch menu */
 @property(nonatomic) BOOL menuFrame;      /* the game shows a menu that takes touches */
@@ -861,8 +881,6 @@ static void *runGame(void *unused) {
 @property(nonatomic) int displayHzTicks;     /* display frames in a row at another rate */
 - (void)cancelTouches;
 - (void)updateTouchMenu;
-- (void)updateTVModeButton;
-- (void)toggleTVMode;
 @end
 @implementation GameViewController
 - (BOOL)prefersStatusBarHidden { return YES; }
@@ -958,16 +976,6 @@ static void *runGame(void *unused) {
             setControllerInUse(NO, "real controller disconnected");
         }];
     }
-    if (self.rhythmLayout && tvModeToggle) {
-        /* The button shows in menus, maps, and other non-level periods. */
-        self.tvModeButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        self.tvModeButton.accessibilityLabel = @"切换运行模式";
-        self.tvModeButton.accessibilityHint = @"打开启动模式切换确认";
-        [self.tvModeButton addTarget:self action:@selector(toggleTVMode) forControlEvents:UIControlEventTouchUpInside];
-        [self updateTVModeButton];
-        self.tvModeButton.hidden = YES;
-        [controls addSubview:self.tvModeButton];
-    }
     self.inputLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(pollInput:)];
     self.inputLink.preferredFrameRateRange = displayHzWanted > 60 ? CAFrameRateRangeMake(80, 120, 120) : CAFrameRateRangeMake(60, 60, 60);
     self.displayHz = 60;
@@ -1017,8 +1025,6 @@ static void *runGame(void *unused) {
         BOOL menu = ss_touch_layout(hint) == SS_TOUCH_MENU;
         BOOL dpad = ss_touch_layout(hint) == SS_TOUCH_DPAD;
         BOOL single = ss_touch_layout(hint) == SS_TOUCH_ONE;
-        if (self.tvModeButton)
-            self.tvModeButton.hidden = ss_touch_level_get();
         int extra = ss_touch_extra(hint);   /* zero outside a level */
         [self.leftZone applyHint:hint];
         self.leftZone.hidden = menu || dpad || single;
@@ -1093,54 +1099,6 @@ static void *runGame(void *unused) {
         control.configuration = updated;
     };
 }
-/* The icon shows the mode of the running app. A saved change starts with the next app launch. */
-- (void)updateTVModeButton {
-    if (!self.tvModeButton) return;
-    UIButtonConfiguration *config = glassButtonConfiguration();
-    config.image = [UIImage systemImageNamed:tvModeOn ? @"iphone.landscape" : @"tv"];
-    config.preferredSymbolConfigurationForImage = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightSemibold];
-    setGlassButton(self.tvModeButton, config);
-    self.tvModeButton.accessibilityValue = tvModeOn ? @"当前 TV 模式，点击切换到掌机模式" : @"当前掌机模式，点击切换到 TV 模式";
-}
-- (void)toggleTVMode {
-    if (!tvModeToggle || self.presentedViewController) return;
-    BOOL target = !tvModeOn;
-    NSString *currentName = tvModeOn ? @"TV" : @"掌机";
-    NSString *targetName = target ? @"TV" : @"掌机";
-    NSString *feature = target ? @"启用功能：延迟校正" : @"关闭功能：延迟校正";
-    /* The first alert separates the current mode from the question and the feature change.
-       The runtime has no in-process restart. A new mode starts with the next app launch. */
-    UIAlertController *alert = [UIAlertController
-        alertControllerWithTitle:[NSString stringWithFormat:@"当前模式：%@", currentName]
-        message:[NSString stringWithFormat:@"是否切换为%@模式？\n\n%@", targetName, feature]
-        preferredStyle:UIAlertControllerStyleAlert];
-    [alert addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"切换" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-        id previous = [defaults objectForKey:@"TouchableTVMode"];
-        [defaults setBool:target forKey:@"TouchableTVMode"];
-        BOOL written = [defaults synchronize];
-        id savedValue = [defaults objectForKey:@"TouchableTVMode"];
-        BOOL saved = written && [savedValue isKindOfClass:NSNumber.class] && [savedValue boolValue] == target;
-        if (!saved) {
-            /* Do not leave a value that the next launch could apply after a failed write. */
-            if (previous) [defaults setObject:previous forKey:@"TouchableTVMode"];
-            else [defaults removeObjectForKey:@"TouchableTVMode"];
-            [defaults synchronize];
-            fprintf(stderr, "TV mode: save failed\n");
-        } else {
-            /* tvModeOn stays the mode of this run. The icon and the next alert keep the old
-               state until the app reads the saved value at launch. */
-            fprintf(stderr, "TV mode: next launch uses %s\n", target ? "TV" : "handheld");
-        }
-        NSString *result = saved ? @"切换成功，重启APP生效" : @"切换失败，请重试";
-        UIAlertController *done = [UIAlertController alertControllerWithTitle:nil message:result
-                                                                    preferredStyle:UIAlertControllerStyleAlert];
-        [done addAction:[UIAlertAction actionWithTitle:@"好" style:UIAlertActionStyleDefault handler:nil]];
-        dispatch_async(dispatch_get_main_queue(), ^{ [self presentViewController:done animated:YES completion:nil]; });
-    }]];
-    [self presentViewController:alert animated:YES completion:nil];
-}
 - (void)togglePad {
     self.padInMenu = !self.padInMenu;
     fprintf(stderr, "Touch menu: pad %s by the player\n", self.padInMenu ? "shown" : "hidden");
@@ -1208,7 +1166,6 @@ static void *runGame(void *unused) {
     if (self.backButton) [views addObject:self.backButton];
     if (self.skipButton) [views addObject:self.skipButton];
     if (self.padToggle) [views addObject:self.padToggle];
-    if (self.tvModeButton) [views addObject:self.tvModeButton];
     [views addObjectsFromArray:self.buttons];
     for (UIView *view in views) {
         BOOL glass = ![view isKindOfClass:PadButton.class] || ((PadButton *)view).glassShown;
@@ -1268,12 +1225,6 @@ static void *runGame(void *unused) {
             centers[8] = (CGPoint){lx + 2 * pair, topY}; /* X */
             centers[5] = (CGPoint){rx - pair, topY}; /* - */
             centers[6] = (CGPoint){rx, topY};        /* + */
-        }
-        if (self.tvModeButton) {
-            /* Below the minus button. On iPad this position is also left of the plus button. */
-            CGFloat side = 44;
-            CGPoint center = CGPointMake(centers[5].x, centers[5].y + 56);
-            self.tvModeButton.frame = CGRectMake(center.x - side / 2, center.y - side / 2, side, side);
         }
         self.glassLayer.frame = self.view.bounds;
         for (NSUInteger i = 0; i < self.buttons.count; ++i) {
@@ -1401,7 +1352,7 @@ static void *runGame(void *unused) {
     if (gameStarted) { dm_focus_set(0); dm_audio_suspend(1); dm_gfx_suspend(1); }
 }
 - (void)sceneDidBecomeActive:(UIScene *)scene {
-    if (gameStarted) { dm_gfx_suspend(0); dm_audio_suspend(0); dm_focus_set(1); }
+    if (gameStarted) { dm_gfx_suspend(0); dm_audio_suspend(0); dm_focus_set(1); followAudioRoute("app active"); }
 }
 @end
 
@@ -1409,7 +1360,7 @@ static void *runGame(void *unused) {
 @end
 @implementation GameDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)options {
-    tvModeToggle = [[NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableTVModeToggle"] boolValue];
+    tvModeAudioRoute = [[NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableTVModeAudioRoute"] boolValue];
     BOOL launchModeSet = getenv("DM_OPMODE") != NULL;   /* devicectl or Xcode launch environment */
     NSFileManager *fm = NSFileManager.defaultManager;
     NSString *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
@@ -1465,18 +1416,6 @@ static void *runGame(void *unused) {
     for (NSString *key in environment) {
         setenv(key.UTF8String, [environment[key] UTF8String], 1);
     }
-    if (tvModeToggle) {
-        NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-        BOOL saved = [defaults objectForKey:@"TouchableTVMode"] != nil;
-        /* A launch environment wins for device tests. Otherwise the saved mode wins over the
-           profile default. The game reads DM_OPMODE once during start-up. */
-        if (!launchModeSet && saved) setenv("DM_OPMODE", [defaults boolForKey:@"TouchableTVMode"] ? "1" : "0", 1);
-        const char *mode = getenv("DM_OPMODE");
-        tvModeOn = mode && *mode && atoi(mode) != 0;
-        setenv("DM_OPMODE", tvModeOn ? "1" : "0", 1);
-        fprintf(stderr, "TV mode: launch %s (saved %s)\n", tvModeOn ? "TV" : "handheld",
-                saved ? ([defaults boolForKey:@"TouchableTVMode"] ? "TV" : "handheld") : "unset");
-    }
     /* The game starts at 60 Hz. The input display link raises the rate when the screen runs at 120 Hz. */
     const char *displayHz = getenv("SS_DISPLAY_HZ");
     if (displayHz && atoi(displayHz) == 120) displayHzWanted = 120;
@@ -1486,6 +1425,15 @@ static void *runGame(void *unused) {
     NSNumber *ioBuffer = [NSBundle.mainBundle objectForInfoDictionaryKey:@"TouchableAudioIOBufferDuration"];
     if (ioBuffer) [audio setPreferredIOBufferDuration:ioBuffer.doubleValue error:nil];
     [audio setActive:YES error:nil];
+    if (tvModeAudioRoute) {
+        /* The start mode comes from the audio output. A launch environment (DM_OPMODE from devicectl) wins for tests. */
+        AVAudioSessionRouteDescription *route = audio.currentRoute;
+        if (!launchModeSet) setenv("DM_OPMODE", audioRouteIsTV(route) ? "1" : "0", 1);
+        fprintf(stderr, "TV mode: launch %s, audio output %s\n", atoi(getenv("DM_OPMODE") ?: "0") ? "TV" : "handheld", audioRouteName(route).UTF8String);
+        [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionRouteChangeNotification object:audio queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            followAudioRoute("route change");
+        }];
+    }
     ss_haptics_ios_init();
     [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audio queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
         BOOL paused = [note.userInfo[AVAudioSessionInterruptionTypeKey] unsignedIntegerValue] == AVAudioSessionInterruptionTypeBegan;

@@ -36,11 +36,6 @@ void ss_touch_left_set(int layout, int first, int second, int extra) {
     atomic_store(&touch_left, value | ((old >> 32) + 1) << 32);
 }
 uint64_t ss_touch_left_get(void) { return atomic_load(&touch_left); }
-/* The game adapter marks a level. The iOS layer hides the TV mode button in a level,
-   including its pause menu. */
-static _Atomic int touch_level;
-void ss_touch_level_set(int active) { atomic_store(&touch_level, active != 0); }
-int ss_touch_level_get(void) { return atomic_load(&touch_level); }
 static uint64_t held_buttons(void) {
     uint64_t mask = atomic_load(&buttons), now = guest_ns();
     for (int bit = 0; bit < 64; ++bit) {
@@ -93,15 +88,25 @@ HLE_FORCE("_ZN2nn3hid24SetSupportedNpadStyleSetENS_4util10BitFlagSetILi32ENS0_12
 HLE_FORCE("_ZN2nn3hid24GetSupportedNpadStyleSetEv", "Read supported controller styles", uint32_t, ss_pad_styles_get, void) { return atomic_load(&styles); }
 HLE_FORCE("_ZN2nn3hid15GetNpadStyleSetERKj", "Read local controller style", uint32_t, ss_pad_style, const uint32_t *id) {
     uint32_t style = player_style(*id);
-    static int logged;
-    if (!logged) {
-        logged = 1;
+    static uint32_t logged = ~0u;   /* log the first read and each change for the selected player */
+    if (*id == player && style != logged) {
+        logged = style;
         LOG("Input: player %#x id %#x style %#x supported %#x mode %d", player, *id, style, atomic_load(&styles), dm_opmode());
     }
     return style;
 }
+/* The style events that the game bound. A live operation mode change signals them, so the game
+   reads the controller style again (handheld or full-key). */
+static void *style_events[8];
+static _Atomic int style_event_count;
+void ss_input_style_changed(void) {
+    int count = atomic_load(&style_event_count);
+    for (int i = 0; i < count; ++i) hle_signal_system_event(style_events[i]);
+}
 HLE_FORCE("_ZN2nn3hid27BindNpadStyleSetUpdateEventERKjPNS_2os15SystemEventTypeENS3_14EventClearModeE", "Create controller state event", void, ss_pad_event, const uint32_t *id, void *event, int clear) {
     (void)id; hle_bind_system_event(event, clear); hle_signal_system_event(event);
+    int count = atomic_load(&style_event_count);
+    if (count < 8) { style_events[count] = event; atomic_store(&style_event_count, count + 1); }
 }
 #define PAD_STATE(type, cname, mask) \
  HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_" type "ERKj", "Read controller state", void, cname, ss_pad_state *out, const uint32_t *id) { pad_read(out, *id, mask); } \
