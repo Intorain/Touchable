@@ -276,7 +276,11 @@ git -C .touchable/dependencies/d2r-mobile status --short
 git -C .touchable/dependencies/d2r-mobile diff --stat
 ```
 
-The existing modified files contain project changes. Preserve them. After an upstream change, update `internal/patches/d2r-mobile.patch` against the pinned revision. Include new source files in the patch. A plain `git diff` omits untracked files. Review the patch before replacement and check that it applies to a clean copy of the pinned source.
+The existing modified files contain project changes. Preserve them. After an upstream change, update `internal/patches/d2r-mobile.patch` against the pinned revision. Include new source files in the patch. A plain `git diff` omits untracked files. Mark each new file with `git add --intent-to-add` before you write the patch.
+
+The launcher compares `git diff --binary --full-index` of the upstream tree with the patch byte for byte. `bootstrap.sh` applies the patch with `git apply --intent-to-add`. The launcher also marks new patch files that are untracked. Copies that were prepared before 2026-10-21 left these files untracked and failed the comparison ([issue #4](https://github.com/MZhao-ouo/Touchable/issues/4)). To check a patch, apply it with `--intent-to-add` to a clean copy of the pinned source in a scratch directory, and compare the regenerated diff with the patch.
+
+Review the patch before replacement and check that it applies to a clean copy of the pinned source.
 
 Use the same procedure for `internal/patches/hactool.patch` when hactool changes. Do not reset the upstream working tree to obtain a clean test copy.
 
