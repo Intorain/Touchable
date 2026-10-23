@@ -1,5 +1,13 @@
 # Rhythm Heaven
 
+## 2026-10-23: Select, then confirm on the level map (build 40)
+
+User request: change every double-tap confirm to select-then-confirm.
+- `runtime/rh_menu.c`: a tap on the selected level starts it. A tap on another level selects it. Before, a level needed two taps even when it was already selected. `rh_map_tap_activate()` and its test cases are removed; `test_menu` keeps the scroll-limit cases.
+- Menus, dialogs, and the pause menu already act on one tap. The Rhythm Toys already use select-then-confirm.
+- Mac host test: tap on level 3 selected it, a second tap started it; after B, one tap on the still-selected level 3 started it. `test_menu` passed; both Mac host builds passed with no warnings.
+- Build 40 (IPA SHA-256 `1343d0c8e0ead233b08818b9fc2c9914a0028047ae0a3bef7a22fc84831e9130`, 41 warnings) is installed on the iPhone and the iPad mini (2026-10-23). The map change was not tested on a device.
+
 ## 2026-10-23: Rhythm Toys touch and Drum Lessons controller (build 39)
 
 The user asked for touch in the Rhythm Toys and for a virtual controller in Drum Lessons.
@@ -544,7 +552,7 @@ Direct touch in build 7:
 | Screen | Action |
 | --- | --- |
 | Normal list menu | Drag up and down in the list. Tap a visible item to execute it. Release after a drag does not execute an item |
-| Level map | Drag the map left and right. The first tap only selects a level. A second tap on the same level starts the game. Two taps are necessary even when the level was already selected. A drag or a change of the selected level resets the count |
+| Level map | Drag the map left and right. A tap on a level that is not selected selects it. A tap on the selected level starts the game |
 | Pause menu and common option pop-ups | Tap an option to execute it |
 | In-game "Y demonstration" hint | Holding the hint is the same as holding Y. Release is the same as releasing Y |
 | In-game "− skip" hint | A tap on the hint is the same as a press of − |

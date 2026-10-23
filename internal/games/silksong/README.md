@@ -4,6 +4,15 @@
 
 
 
+## 2026-10-23: Select, then confirm on the save select (build 33)
+
+User request: "There are still a lot of double tap to confirm logic, change all of them to select-then-confirm" (also for Silksong).
+
+- `runtime/ss_touch_ui.c`: on the save select, a tap on the item that was already selected clicks it. A tap on another item only selects it. Before, an already selected item needed two taps. This applies to the slots, the restore points, the clear button, and Back.
+- The inventory already worked this way (a tap on the selected item is A). No other screen used two taps.
+- Mac host test on a copy of the 2026-10-23 phone save (`SS_TOUCH_TRACE=1`): with slot 2 selected, one tap on slot 2 loaded it (`game=4`). In a second run, a tap on slot 3 selected it, a tap on slot 2 selected it, and a second tap on slot 2 loaded it. Evidence: `.touchable/work/silksong/reports/select-confirm-20261023/`.
+- Build 33 (IPA `Silksong-build33-20261023-153701-ae1fc9.ipa`, SHA-256 `c1ba7fa6dfe82349205d0cd880059fc0fe89278650f2df6033c6968ae5377a3e`) is installed on the iPhone (2026-10-23). The iPad install failed: the launcher could not read the iPad (locked or disconnected). Not tested on a device.
+
 ## 2026-10-23: Controls nearer the side edges, and a faster press response (build 32)
 
 User request: "Move the virtual buttons closer to the left and right edges. Make button interaction animation faster".

@@ -11,7 +11,6 @@ static uint8_t *base;
 static const module_t *module;
 static int trace;
 static ss_pointer_gesture gesture;
-static rh_map_tap map_tap;
 static int can_drag;
 static uint64_t traced_owner;
 static uint64_t traced_hints;
@@ -383,7 +382,6 @@ static void map_input(void *scene) {
     if (integer(scene, 0x5288) == 2) {
         void *selector = ptr(scene, 0x6d68);
         if (selector) selector_input(selector, ptr(selector, 0x18), scene);
-        map_tap.armed = 0;
         ((void (*)(void *))(base + 0x1d1410))(scene);
         return;
     }
@@ -391,21 +389,17 @@ static void map_input(void *scene) {
     if (map_frame(scene, &frame)) {
         frame.token = ss_pointer_publish(&frame);
         reset_gesture(frame.token);
-        if (map_tap.armed) {
-            uint64_t selected = 1 + integer(scene, 0x5274) * 60 + integer(scene, 0x5298) * 5 + integer(scene, 0x529c);
-            if (map_tap.token != frame.token || map_tap.item != selected) map_tap.armed = 0;
-        }
         ss_pointer_event event;
         while (ss_pointer_take(frame.token, &event)) {
             if (event.type == SS_POINTER_DOWN) can_drag = ss_pointer_contains(frame.scroll, event.x, event.y);
-            if (event.type == SS_POINTER_CANCEL) map_tap.armed = 0;
             ss_pointer_action action = ss_pointer_track(&gesture, event);
-            if ((action.flags & SS_POINTER_PAN) && can_drag) { map_tap.armed = 0; map_pan(scene, action.dx); }
+            if ((action.flags & SS_POINTER_PAN) && can_drag) map_pan(scene, action.dx);
             if (action.flags & SS_POINTER_TAP) {
                 int hit = ss_pointer_hit(&frame, action.x, action.y);
-                if (hit < 0) { map_tap.armed = 0; continue; }
+                if (hit < 0) continue;
                 const ss_pointer_target *item = &frame.targets[hit];
-                int activate = rh_map_tap_activate(&map_tap, frame.token, item->id, item->flags & SS_POINTER_SELECTED);
+                /* Select, then confirm: a tap on the selected level enters it. A tap on another level selects it. */
+                int activate = (item->flags & SS_POINTER_SELECTED) != 0;
                 unsigned position = (unsigned)(item->id - 1) % 60;
                 if (!activate) map_focus(scene, position / 5, position % 5);
                 else ((void (*)(void *, int, void *, int))(base + 0x12d8f0))((uint8_t *)scene + 0x2978, 8, NULL, 0);
