@@ -256,6 +256,17 @@ Read the app language from `NSLocale.preferredLanguages`.
 Map each language tag to a game language code.
 Check the Settings entry on the target device.
 Test representative languages and one unsupported language.
+
+Put the app names in `ios.display_names` in `game.json`. Use the official titles from the game's `control.nacp`:
+
+```sh
+.touchable/venv/bin/python internal/tools/game_titles.py --game <id> --keys MyGameFiles/keys/ProdKeys.-v22.5.0/prod.keys MyGameFiles/<id>/<package>.nsp
+```
+
+Map the Switch language codes to iOS language IDs (`en-US` to `en`, `pt` to `pt-PT`). `en` is the default name.
+The generator writes `CFBundleDisplayName` from `en` and a `<language>.lproj/InfoPlist.strings` for each other name.
+A name that equals the default gets no file, unless another variant of the same language has a different name.
+The Files app folder uses the same localized name. The product name, the save folders, and the IPA names stay English.
 A launch-argument test is not a Settings tap test.
 Record both results.
 

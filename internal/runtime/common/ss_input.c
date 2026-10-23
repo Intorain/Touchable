@@ -36,6 +36,10 @@ void ss_touch_left_set(int layout, int first, int second, int extra) {
     atomic_store(&touch_left, value | ((old >> 32) + 1) << 32);
 }
 uint64_t ss_touch_left_get(void) { return atomic_load(&touch_left); }
+void ss_touch_press(uint64_t mask) {
+    uint64_t now = guest_ns();
+    for (int bit = 0; mask; ++bit, mask >>= 1) if (mask & 1) atomic_store(&press_ns[bit], now ? now : 1);
+}
 static uint64_t held_buttons(void) {
     uint64_t mask = atomic_load(&buttons), now = guest_ns();
     for (int bit = 0; bit < 64; ++bit) {

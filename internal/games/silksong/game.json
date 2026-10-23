@@ -57,6 +57,18 @@
     "shader_build": "unity-nvn"
   },
   "ios": {
+    "display_names": {
+      "en": "Hollow Knight: Silksong",
+      "ja": "Hollow Knight: Silksong",
+      "fr": "Hollow Knight: Silksong",
+      "de": "Hollow Knight: Silksong",
+      "es": "Hollow Knight: Silksong",
+      "it": "Hollow Knight: Silksong",
+      "ru": "Hollow Knight: Silksong",
+      "ko": "Hollow Knight: Silksong",
+      "zh-Hans": "空洞骑士 丝之歌",
+      "pt-BR": "Hollow Knight: Silksong"
+    },
     "deployment_target": "26.0"
   },
   "host": {

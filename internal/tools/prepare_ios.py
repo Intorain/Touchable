@@ -51,6 +51,49 @@ def shell_tv_mode_audio_route(shell):
     return value
 
 
+def shell_display_names(shell, fallback):
+    """Return {language: app name}. "en" is the default name. The names are the official titles from
+    control.nacp (tools/game_titles.py). Without a table, the app uses fallback for all languages."""
+    names = shell.get('display_names')
+    if names is None:
+        return {'en': fallback}
+    if (not isinstance(names, dict) or not isinstance(names.get('en'), str) or
+            not all(isinstance(k, str) and re.fullmatch(r'[a-z]{2,3}(-[A-Za-z0-9]{2,4})?', k) and isinstance(v, str) and v.strip()
+                    for k, v in names.items())):
+        raise WorkspaceError('ios.display_names must map language IDs to names and include "en".')
+    return names
+
+
+def localized_names(names):
+    """Return {language: name} for the .lproj folders. A name that equals the default needs no folder,
+    because iOS falls back to it, unless another variant of the same language has a different name."""
+    base = names['en']
+    result = {}
+    for language, name in names.items():
+        if language == 'en':
+            continue
+        family = {v for k, v in names.items() if k.split('-')[0] == language.split('-')[0]}
+        if name != base or len(family) > 1:
+            result[language] = name
+    return result
+
+
+def stage_display_names(names, directory):
+    """Write <language>.lproj/InfoPlist.strings with CFBundleDisplayName. Remove other .lproj folders."""
+    directory.mkdir(parents=True, exist_ok=True)
+    wanted = {language + '.lproj': name for language, name in localized_names(names).items()}
+    for stale in directory.glob('*.lproj'):
+        if stale.name not in wanted: shutil.rmtree(stale)
+    folders = []
+    for folder, name in sorted(wanted.items()):
+        path = directory / folder
+        path.mkdir(exist_ok=True)
+        with (path / 'InfoPlist.strings').open('wb') as stream:
+            plistlib.dump({'CFBundleDisplayName': name}, stream, fmt=plistlib.FMT_BINARY)
+        folders.append(path)
+    return folders
+
+
 def write_game_header(game, directory):
     directory.mkdir(parents=True, exist_ok=True)
     header = directory / 'touchable_game_config.h'
@@ -146,11 +189,15 @@ def main():
 
         with (ROOT / 'platform/ios/Info.plist').open('rb') as stream:
             info = plistlib.load(stream)
-        info.update(CFBundleName=game.product_name, CFBundleDisplayName=game.display_name,
+        shell = game.data.get('ios', {})
+        names = shell_display_names(shell, game.display_name)
+        # The default app name is the English title. Other languages use <language>.lproj/InfoPlist.strings.
+        info.update(CFBundleName=game.product_name, CFBundleDisplayName=names['en'],
                     TouchableGameID=game.id, TouchableSaveDirectory=game.save_directory,
                     TouchableRuntimeEnvironment=game.profile.get('environment', {}))
         # Optional per-game shell settings from game.json "ios".
-        shell = game.data.get('ios', {})
+        info['CFBundleDevelopmentRegion'] = 'en'
+        name_folders = stage_display_names(names, gen / 'Names')
         if shell.get('touch_layout') not in (None, 'switch', 'rhythm'):
             raise WorkspaceError('ios.touch_layout must be switch or rhythm.')
         if shell.get('touch_layout'): info['TouchableTouchLayout'] = shell['touch_layout']
@@ -160,7 +207,6 @@ def main():
         localizations = shell_localizations(shell)
         if localizations:
             info['CFBundleLocalizations'] = localizations
-            info['CFBundleDevelopmentRegion'] = 'en'
         io_buffer = shell.get('audio_io_buffer_seconds')
         if io_buffer is not None:
             if not isinstance(io_buffer, (int, float)) or not 0.001 <= io_buffer <= 0.1:
@@ -190,7 +236,7 @@ def main():
             ref = obj('ref:' + str(path), f'isa=PBXFileReference; lastKnownFileType={kinds[path.suffix]}; path={quote(path)}; sourceTree="<absolute>";')
             refs.append(ref)
             source_build.append(obj('build:' + str(path), f'isa=PBXBuildFile; fileRef={ref};'))
-        for path in (modules, shaders, game.content_dir / 'RomFS', assets):
+        for path in (modules, shaders, game.content_dir / 'RomFS', assets, *name_folders):
             kind = 'folder.assetcatalog' if path.suffix == '.xcassets' else 'folder'
             ref = obj('ref:' + str(path), f'isa=PBXFileReference; lastKnownFileType={kind}; path={quote(path)}; sourceTree="<absolute>";')
             refs.append(ref)

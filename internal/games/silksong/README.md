@@ -1,5 +1,12 @@
 **Silksong Switch → iPhone / iPad port workspace**
 
+## 2026-10-23: App name follows the language
+
+The home screen name now follows the language of the device. The names are the official titles from the game's `control.nacp` (`internal/tools/game_titles.py`), stored in `ios.display_names` in `game.json`.
+- Silksong: "Hollow Knight: Silksong" for all languages except Simplified Chinese ("空洞骑士 丝之歌"). The game has no Traditional Chinese title.
+The default name is English. The Files app folder shows the same localized name; iOS has no separate setting for it. The product name, the save folders, and the IPA names stay English.
+Checked in the iOS Simulator (Simplified Chinese) with a test app that uses the generated names: the home screen and the Files folder show the Chinese name. The change applies with the next app build.
+
 ## 2026-10-21: Shader libraries for iOS 26 (source and shader change, no build)
 
 On iOS 26 the game screen stayed black, with working audio and touch controls. The shader libraries targeted iOS 27, the version of the Xcode 27 SDK, and iOS 26 refused to load them. `build_shaders.py` now compiles for the manifest deployment targets (iOS 26.0, macOS 26.0) and checks each library header. `prepare_ios.py` refuses newer libraries. Runtime MSL compiles with Metal 4.0. A rejected library falls back to its `.metal` source. The iOS and host builds treat an unguarded new API as an error. The new chain is `a9bf9ac9ed21`. Mac host test, graphics tests, and an unsigned iOS build passed. No iOS 26 device was available, so the fix is not confirmed on iOS 26. Evidence: `.touchable/work/silksong/reports/ios26-metal-target-20261021/`.

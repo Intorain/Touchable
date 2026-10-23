@@ -872,6 +872,7 @@ static void *runGame(void *unused) {
 @property(nonatomic) BOOL loadingScreen;  /* a loading screen: all touch controls are hidden */
 @property(nonatomic) int pointerMode;
 @property(nonatomic) BOOL levelControlsVisible;
+@property(nonatomic) BOOL fullPad;   /* the scene uses the full controller (SS_TOUCH_PAD, Drum Lessons) */
 @property(nonatomic) BOOL loggedControls;
 @property(nonatomic) BOOL sideControlsFit;
 @property(nonatomic) BOOL verticalBars;
@@ -904,8 +905,9 @@ static void *runGame(void *unused) {
     NSArray *names; const int *bits;
     static const int switchBits[] = {0, 1, 2, 3, 6, 7, 8, 9, 10, 11};
     /* A stays transparent. B and +/- use the black side bars.
-       Direction controls follow the current level frame. Y and X show when the level uses them. */
-    static const int rhythmBits[] = {12, 13, 14, 15, 1, 11, 10, 3, 2};
+       Direction controls follow the current level frame. Y and X show when the level uses them.
+       A visible A and ZR show only with the full controller. */
+    static const int rhythmBits[] = {12, 13, 14, 15, 1, 11, 10, 3, 2, 0, 9};
     if (self.rhythmLayout) {
         TouchZone *a = [[TouchZone alloc] initWithBit:1ull << 0 title:@"A"];
         a.appearanceHidden = YES;
@@ -921,7 +923,7 @@ static void *runGame(void *unused) {
         [self.view addSubview:a];
         [self.zones addObject:a];
         [self.zones addObject:self.singleLeftZone];
-        names = @[@"◀", @"▲", @"▶", @"▼", @"B", @"−", @"+", @"Y", @"X"]; bits = rhythmBits;
+        names = @[@"◀", @"▲", @"▶", @"▼", @"B", @"−", @"+", @"Y", @"X", @"A", @"ZR"]; bits = rhythmBits;
     } else {
         /* Menu touches go to the game. The pad above it keeps its own touches. */
         switchControls = YES;
@@ -1021,6 +1023,16 @@ static void *runGame(void *unused) {
         uint64_t hint = ss_touch_left_get();
         if (!hasPointer || frame.mode != SS_POINTER_HINTS || ss_touch_layout(hint) == SS_TOUCH_MENU) pauseMenu = NO;
         BOOL inLevel = hasPointer && frame.mode == SS_POINTER_HINTS && !pauseMenu && ss_touch_layout(hint) != SS_TOUCH_MENU;
+        /* Drum Lessons use the full controller. A touch menu, for example the pause menu, hides it. */
+        BOOL fullPad = ss_touch_layout(hint) == SS_TOUCH_PAD && !pauseMenu &&
+                       !(hasPointer && (frame.mode == SS_POINTER_MENU || frame.mode == SS_POINTER_MAP));
+        if (fullPad != self.fullPad) {
+            self.fullPad = fullPad;
+            [self.zones.firstObject cancelInput];
+            for (NSUInteger i = 0; i < 4; ++i) self.buttons[i].appearanceHidden = !fullPad && !self.levelControlsVisible;
+            [self.view setNeedsLayout];
+            if (getenv("RH_MENU_TRACE")) fprintf(stderr, "Touch full controller: %s\n", fullPad ? "shown" : "hidden");
+        }
         if (!inLevel) hint = SS_TOUCH_MENU;
         BOOL menu = ss_touch_layout(hint) == SS_TOUCH_MENU;
         BOOL dpad = ss_touch_layout(hint) == SS_TOUCH_DPAD;
@@ -1042,12 +1054,12 @@ static void *runGame(void *unused) {
         self.singleLeftZone.hidden = !single;
         BOOL directMenu = hasPointer && (frame.mode == SS_POINTER_MENU || frame.mode == SS_POINTER_MAP);
         TouchZone *a = self.zones.firstObject;
-        a.hidden = directMenu;
+        a.hidden = directMenu || fullPad;
         if (!self.loggedControls || self.levelControlsVisible != inLevel) {
             if (self.levelControlsVisible && !inLevel) [a cancelInput];
             self.loggedControls = YES;
             self.levelControlsVisible = inLevel;
-            for (NSUInteger i = 0; i < 4; ++i) self.buttons[i].appearanceHidden = !inLevel;
+            for (NSUInteger i = 0; i < 4; ++i) self.buttons[i].appearanceHidden = !inLevel && !fullPad;
             if (getenv("RH_MENU_TRACE")) fprintf(stderr, "Touch level controls: %s (pointer mode %d, scene layout %d, extra %#x)\n", inLevel ? "shown" : "hidden", self.pointerMode, ss_touch_layout(ss_touch_left_get()), ss_touch_extra(ss_touch_left_get()));
         }
         unsigned directions = ss_touch_first(hint);
@@ -1075,6 +1087,13 @@ static void *runGame(void *unused) {
         if (x.hidden == showX && getenv("RH_MENU_TRACE")) fprintf(stderr, "Touch X: %s\n", showX ? "shown" : "hidden");
         y.hidden = !showY;
         x.hidden = !showX;
+        if (fullPad) {
+            self.leftZone.hidden = self.singleLeftZone.hidden = YES;
+            for (NSUInteger i = 0; i < 4; ++i) self.buttons[i].hidden = NO;
+            y.bit = 1ull << 3;
+            y.hidden = x.hidden = NO;
+        }
+        for (NSUInteger i = 9; i < self.buttons.count; ++i) self.buttons[i].hidden = !fullPad || self.loadingScreen;   /* A, ZR */
         /* A loading screen hides the visible controls. The transparent A area stays. */
         [self noteLoadingScreen:controls == SS_CONTROLS_HIDE];
         if (self.loadingScreen) {
@@ -1214,8 +1233,10 @@ static void *runGame(void *unused) {
         CGFloat lx = bar >= 52 ? bar / 2 : left + 30;
         CGFloat rx = bar >= 52 ? size.width - bar / 2 : right - 30;
         CGFloat by = MAX(safe.top + 30, 48);
+        CGFloat fx = right - 74;   /* the face buttons of the full controller mirror the D-pad */
         CGPoint centers[] = {{cx - d, cy}, {cx, cy - d}, {cx + d, cy}, {cx, cy + d},
-                             {lx, by}, {rx, by + 56}, {rx, by}, {lx, by + 56}, {lx, by + 112}};
+                             {lx, by}, {rx, by + 56}, {rx, by}, {lx, by + 56}, {lx, by + 112},
+                             {fx + d, cy}, {fx + d / 2, cy - 2 * d - 8}};
         if (self.verticalBars) {
             CGFloat topY = MAX(safe.top + 22, 22);
             topY = MIN(topY, game.origin.y / 2);
@@ -1226,12 +1247,19 @@ static void *runGame(void *unused) {
             centers[5] = (CGPoint){rx - pair, topY}; /* - */
             centers[6] = (CGPoint){rx, topY};        /* + */
         }
+        if (self.fullPad) {
+            /* The full controller: A, B, X, and Y in a diamond at the lower right, and ZR above A and X. */
+            centers[4] = (CGPoint){fx, cy + d};       /* B */
+            centers[7] = (CGPoint){fx - d, cy};       /* Y */
+            centers[8] = (CGPoint){fx, cy - d};       /* X */
+        }
         self.glassLayer.frame = self.view.bounds;
         for (NSUInteger i = 0; i < self.buttons.count; ++i) {
-            CGFloat s = i < 4 ? 50 : 44;
+            BOOL face = self.fullPad && (i == 4 || i >= 7);
+            CGFloat s = i < 4 || face ? 50 : 44, w = i == 10 ? 64 : s;
             PadButton *button = self.buttons[i];
-            button.frame = CGRectMake(centers[i].x - s / 2, centers[i].y - s / 2, s, s);
-            if (i >= 4) button.appearanceHidden = !self.sideControlsFit;
+            button.frame = CGRectMake(centers[i].x - w / 2, centers[i].y - s / 2, w, s);
+            if (i >= 4) button.appearanceHidden = !self.sideControlsFit && !face;
         }
         [self updateDimming];
         if (getenv("RH_MENU_TRACE")) fprintf(stderr, "Touch side bars: width %.1f B %s Y %s X %s minus %s plus %s; A area %s\n", (double)bar,

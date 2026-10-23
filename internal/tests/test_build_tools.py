@@ -8,8 +8,8 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from build_shaders import check_metallib, metallib_target
-from prepare_ios import (shell_controller_haptics, shell_localizations,
-                         shell_tv_mode_audio_route, stage_module_tables, stage_shaders)
+from prepare_ios import (localized_names, shell_controller_haptics, shell_display_names, shell_localizations,
+                         shell_tv_mode_audio_route, stage_display_names, stage_module_tables, stage_shaders)
 from workspace import ROOT, WorkspaceError
 
 
@@ -92,6 +92,34 @@ class MetalLibraryTargetTests(unittest.TestCase):
         self.assertFalse(shell_tv_mode_audio_route({}))
         with self.assertRaises(WorkspaceError):
             shell_tv_mode_audio_route({'tv_mode_audio_route': 'yes'})
+
+
+class DisplayNameTests(unittest.TestCase):
+    def test_every_game_has_an_english_default_name(self):
+        for game in ('rhythm-heaven', 'silksong'):
+            data = json.loads((ROOT / 'games' / game / 'game.json').read_text())
+            names = shell_display_names(data['ios'], data['display_name'])
+            self.assertTrue(names['en'].isascii())
+
+    def test_only_different_names_get_a_language_folder(self):
+        names = {'en': 'Rhythm Heaven Groove', 'en-GB': 'Rhythm Paradise Groove', 'fr': 'Rhythm Paradise Groove',
+                 'fr-CA': 'Rhythm Heaven Groove', 'it': 'Rhythm Heaven Groove', 'zh-Hans': '节奏天国 奇迹之星'}
+        self.assertEqual(localized_names(names), {'en-GB': 'Rhythm Paradise Groove', 'fr': 'Rhythm Paradise Groove',
+                                                  'fr-CA': 'Rhythm Heaven Groove', 'zh-Hans': '节奏天国 奇迹之星'})
+
+    def test_names_are_validated_and_written(self):
+        self.assertEqual(shell_display_names({}, 'Game'), {'en': 'Game'})
+        for bad in ({'zh-Hans': 'x'}, {'en': ''}, {'en': 'A', 'zh_Hans': 'x'}, ['en']):
+            with self.assertRaises(WorkspaceError):
+                shell_display_names({'display_names': bad}, 'Game')
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp)
+            (out / 'old.lproj').mkdir()
+            folders = stage_display_names({'en': 'A', 'ja': 'B'}, out)
+            self.assertEqual([f.name for f in folders], ['ja.lproj'])
+            self.assertFalse((out / 'old.lproj').exists())
+            with (out / 'ja.lproj' / 'InfoPlist.strings').open('rb') as stream:
+                self.assertEqual(plistlib.load(stream), {'CFBundleDisplayName': 'B'})
 
 
 if __name__ == '__main__': unittest.main()

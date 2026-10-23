@@ -1,5 +1,23 @@
 # Rhythm Heaven
 
+## 2026-10-23: Rhythm Toys touch and Drum Lessons controller (build 39)
+
+The user asked for touch in the Rhythm Toys and for a virtual controller in Drum Lessons.
+- Who's Got Rhythm? (`rabbit`): a tap on a rabbit selects it; a tap on the selected rabbit confirms it. The targets follow the rabbits in every grid (2×1 to 5×5). The front row takes a tap where two rabbits overlap. The phone shows the touch targets only while the game takes a choice; the dialogs and Game Over keep the A area.
+- Sound boards (`audio_tile`): a tap selects a cell, a second tap opens the note palette (A). The palette also takes select-then-confirm. "A 摆放" presses A, "X 移除" presses X. The speed panel and "Y 速度" press Y. A tap on a page at the top selects that page (ZL/ZR presses); "ZL" and "ZR" press one step. "+ 返回" presses +. The phone shows no D-pad there.
+- Drum Lessons (`drummer`): a new `SS_TOUCH_PAD` hint. The phone shows the D-pad at the lower left, A, B, X, and Y in a diamond at the lower right, ZR above them, and − and + at the sides. There is no touch area. The lesson texts use A, B, X, Y, the four directions, ZR, and − (`stage_drummer_00.msbt`; E0E7 is ZR, as the sound board shows).
+- How: `rh_menu.c` finds the toy object in the minigame scene's object list and publishes a menu frame with targets. A tap on an item that is not selected walks the cursor with one D-pad (or ZL/ZR) press at a time until the item is selected. A tap on the selected item presses A. Each press goes through the game's own input checks (`ss_touch_press()`, new in `ss_input.c` and `ss_touch.h`). Addresses and offsets are in the comment above `toy_input()`.
+- Mac host (unit and host tests): `test_touch` and `test_menu` passed. Rabbits: the dialogs kept the level frame. In two runs, 32 rounds were answered by a select tap and a confirm tap (walks of 1 and 2 presses; grids 2×1, 2×2, 3×3, and 4×4). The test script missed the frame in 2 rounds; the score reached 10. Game Over returned to the level frame. Sound board: walk to a cell (3 presses), palette open, palette walk and place (blue note), page walk to page 3, Remove, and Speed (▶▶ to ▶▶▶) passed. All button targets cover their labels. Evidence: `.touchable/work/rhythm-heaven/reports/toy-touch-20261023/`.
+- Not tested: Drum Lessons. The host saves keep the cafe closed ("店里现在还没准备好"), so the lesson scene and the full controller were not reached. The phone layout was not tested on a device.
+- Builds: both Mac hosts and the Xcode device build (41 warnings, none in the changed files) passed. IPA `IPA/rhythm-heaven/RhythmHeaven-build39-toy-touch-20261023.ipa` (SHA-256 `340bb20bf7c4c91a38ba67002ef6335a4fdc76884dcce6e029fcacdc233e846e`). It also has the localized app names. Installed on the iPhone on 2026-10-23 (save backup `.touchable/saves/rhythm-heaven/phone-before-install-20261023-081752-3c995a/`). Not installed on the iPad mini: the game was running there.
+
+## 2026-10-23: App name follows the language
+
+The home screen name now follows the language of the device. The names are the official titles from the game's `control.nacp` (`internal/tools/game_titles.py`), stored in `ios.display_names` in `game.json`.
+- Rhythm Heaven: "Rhythm Heaven Groove" (English, Latin American Spanish, Canadian French), "Rhythm Paradise Groove" (British English, French, German, Spanish, Italian, Dutch), "リズム天国 ミラクルスターズ", "리듬 천국 미라클 스타즈", "節奏天國 奇蹟之星", and "节奏天国 奇迹之星".
+The default name is English. The Files app folder shows the same localized name; iOS has no separate setting for it. The product name, the save folders, and the IPA names stay English.
+Checked in the iOS Simulator (Simplified Chinese) with a test app that uses the generated names: the home screen and the Files folder show the Chinese name. Build 39 includes the names.
+
 ## 2026-10-21: TV mode follows the audio output (build 38)
 
 The user asked to remove the mode button and to choose the mode from the audio output.

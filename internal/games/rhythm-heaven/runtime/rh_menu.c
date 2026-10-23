@@ -428,8 +428,166 @@ static int pause_input(void *scene) {
     }
     return 1;
 }
+/* Rhythm Toys. A toy scene uses the minigame scene class (main+0xd2b730). Its list at +0x38 (node:
+   next, previous, object) holds the toy's game object.
+   Who's Got Rhythm? (main+0xd212e0): the sprite at +0x3cd0 holds the rabbits. The actors at +0x3ce8
+   (5 per row, rows 0x28 apart) keep their sprites at +0x18. Columns are at +0x3db0, rows at +0x3db4, the cursor column and row at +0x3dd4
+   and +0x3dd8 (main+0x212df0). The cursor shows when +0x3dd0 is 1. +0x3ef0 counts the hearts.
+   The toy base sets +0x2a6a while the rabbits take input (main+0x12a980). A dialog that waits for A
+   clears it. The sound board leaves it clear.
+   Sound board (main+0xd0dce0): the sprite is at +0x3e08 and the board at +0x3e18. The board keeps the
+   grid cursor at +0x40 and +0x44, the palette cursor at +0xac and +0xb0, the page at +0x7b0, and the
+   open palette at +0x7b8 (main+0x13f5b0, main+0x13f810, main+0x13f910). The cells are matrix/rowRR/
+   columnCC and palette/rowRR/columnCC.
+   A tap on an item that is not selected starts a walk: one D-pad press at a time moves the cursor until
+   the item is selected. A tap on the selected item presses A. A page takes ZL or ZR presses and needs one
+   tap. The game checks each press itself, so a press that the game does not expect has no effect. */
+enum { TOY_RABBIT = 1, TOY_GRID = 2, TOY_PALETTE = 3, TOY_PAGE = 4 };
+enum { PAD_A = 0, PAD_X = 2, PAD_Y = 3, PAD_ZL = 8, PAD_ZR = 9, PAD_PLUS = 10,
+       PAD_LEFT = 12, PAD_UP = 13, PAD_RIGHT = 14, PAD_DOWN = 15 };
+struct walk_state { uint64_t owner, goal; int presses; double last; };
+static struct walk_state walk;
+static const char *const row_labels[] = {"row00", "row01", "row02", "row03"};
+static const char *const column_labels[] = {"column00", "column01", "column02", "column03"};
+
+static double seconds(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return now.tv_sec + now.tv_nsec / 1e9;
+}
+static void *toy_object(void *scene, unsigned vtable) {
+    if (ptr(scene, 0) != base + 0xd2b730) return NULL;
+    uint8_t *head = (uint8_t *)scene + 0x38;
+    void *node = ptr(head, 0);
+    for (int n = 0; node && node != head && n < 16; ++n, node = ptr(node, 0)) {
+        void *object = ptr(node, 0x10);
+        if (object && ptr(object, 0) == base + vtable) return object;
+    }
+    return NULL;
+}
+static void toy_cell(ss_pointer_frame *frame, void *root, const char *group, int row, int column, int kind,
+                     float size, int selected) {
+    void *node = child(child(child(root, group), row_labels[row]), column_labels[column]);
+    float x = 0, y = 0;
+    if (node_point(root, node, &x, &y))
+        target(frame, (uint64_t)kind << 8 | (unsigned)(row * 4 + column), x, y, size, size, selected ? SS_POINTER_SELECTED : 0, -1);
+}
+static void toy_button(ss_pointer_frame *frame, void *root, const char *label, float dx, float dy, float w, float h, int button) {
+    float x = 0, y = 0;
+    if (point(root, label, &x, &y)) target(frame, 0x1000 + (uint64_t)button, x + dx, y + dy, w, h, SS_POINTER_BUTTON, button);
+}
+static int rabbit_frame(void *game, ss_pointer_frame *frame) {
+    int columns = integer(game, 0x3db0), rows = integer(game, 0x3db4);
+    uint8_t *bytes = game;
+    if (bytes[0x2a6a] != 1 || bytes[0x3dd0] != 1 || integer(game, 0x3ef0) <= 0) return 0;
+    if (columns < 1 || columns > 5 || rows < 1 || rows > 5) return 0;
+    *frame = (ss_pointer_frame){.owner = (uintptr_t)game, .mode = SS_POINTER_MENU};
+    /* The actor sprite (actor +0x18) stands on its point. The rabbit is about 0.9 column wide and
+       1.2 columns high. */
+    float feet[5][5][2] = {0}, size = 200;
+    int found[5][5] = {0};
+    for (int row = 0; row < rows; ++row) for (int column = 0; column < columns; ++column) {
+        void *actor = ptr(game, 0x3ce8 + row * 0x28 + column * 8);
+        found[row][column] = actor && node_point(ptr(game, 0x3cd0), ptr(actor, 0x18), &feet[row][column][0], &feet[row][column][1]);
+    }
+    if (columns > 1 && found[0][0] && found[0][1]) size = fminf(200, fabsf(feet[0][1][0] - feet[0][0][0]));
+    /* Row 0 stands in front and covers the rows behind it. The last target takes an overlap. */
+    for (int row = rows - 1; row >= 0; --row) for (int column = 0; column < columns; ++column) {
+        if (!found[row][column]) continue;
+        int selected = column == integer(game, 0x3dd4) && row == integer(game, 0x3dd8);
+        target(frame, (uint64_t)TOY_RABBIT << 8 | (unsigned)(row * 5 + column), feet[row][column][0],
+               feet[row][column][1] + size * 0.6f, size * 0.95f, size * 1.2f, selected ? SS_POINTER_SELECTED : 0, -1);
+    }
+    return frame->count > 0;
+}
+static int board_frame(void *game, ss_pointer_frame *frame) {
+    void *board = ptr(game, 0x3e18), *root = ptr(game, 0x3e08);
+    if (!board || !sprite(root)) return 0;
+    int palette = ((uint8_t *)board)[0x7b8] == 1, page = integer(board, 0x7b0);
+    *frame = (ss_pointer_frame){.owner = (uintptr_t)board ^ (uint64_t)palette << 56, .mode = SS_POINTER_MENU};
+    if (palette) {
+        for (int row = 0; row < 3; ++row) for (int column = 0; column < 3; ++column)
+            toy_cell(frame, root, "palette", row, column, TOY_PALETTE, 150,
+                     column == integer(board, 0xac) && row == integer(board, 0xb0));
+    } else {
+        for (int row = 0; row < 4; ++row) for (int column = 0; column < 4; ++column)
+            toy_cell(frame, root, "matrix", row, column, TOY_GRID, 150,
+                     column == integer(board, 0x40) && row == integer(board, 0x44));
+        for (int i = 0; i < 6; ++i) {
+            char label[16];
+            snprintf(label, sizeof label, "pattern%02d", i);
+            float x = 0, y = 0;
+            if (point(root, label, &x, &y))
+                target(frame, (uint64_t)TOY_PAGE << 8 | (unsigned)i, x, y, 200, 180, i == page ? SS_POINTER_SELECTED : 0, -1);
+        }
+        toy_button(frame, root, "text_L_button", -25, 0, 120, 110, PAD_ZL);
+        toy_button(frame, root, "text_R_button", 25, 0, 120, 110, PAD_ZR);
+        toy_button(frame, root, "speed", 0, 0, 440, 150, PAD_Y);
+        toy_button(frame, root, "text_Y_button", 0, 0, 260, 90, PAD_Y);
+    }
+    /* The point of text_AB_button is the upper left corner of the two lines "A Place" and "X Remove". */
+    toy_button(frame, root, "text_AB_button", 80, -26, 220, 72, PAD_A);
+    toy_button(frame, root, "text_AB_button", 80, -98, 220, 72, PAD_X);
+    toy_button(frame, root, "text_plus_button", -35, 0, 180, 80, PAD_PLUS);
+    return 1;
+}
+/* One walk step per call. The next press waits until the game has read the previous press. */
+static void toy_walk(const ss_pointer_frame *frame) {
+    if (!walk.goal) return;
+    int goal = -1, now = -1;
+    for (int i = 0; i < frame->count; ++i) {
+        uint64_t id = frame->targets[i].id;
+        if (id == walk.goal) goal = i;
+        if (id >> 8 == walk.goal >> 8 && (frame->targets[i].flags & SS_POINTER_SELECTED)) now = i;
+    }
+    if (walk.owner != frame->owner || goal < 0 || now < 0 || goal == now || walk.presses >= 12) {
+        if (trace) LOG("POINTER toy walk ends at %lld after %d presses", now < 0 ? -1ll : (long long)frame->targets[now].id, walk.presses);
+        walk.goal = 0;
+        return;
+    }
+    double time = seconds();
+    if (time - walk.last < 0.07) return;
+    const ss_pointer_rect *a = &frame->targets[now].rect, *b = &frame->targets[goal].rect;
+    float dx = (b->x + b->width / 2) - (a->x + a->width / 2), dy = (b->y + b->height / 2) - (a->y + a->height / 2);
+    int button = walk.goal >> 8 == TOY_PAGE ? (dx < 0 ? PAD_ZL : PAD_ZR)
+               : fabsf(dx) >= fabsf(dy) ? (dx < 0 ? PAD_LEFT : PAD_RIGHT) : (dy < 0 ? PAD_UP : PAD_DOWN);
+    ss_touch_press(1ull << button);
+    walk.presses++;
+    walk.last = time;
+}
+static int toy_input(void *scene) {
+    void *game;
+    ss_pointer_frame frame;
+    int shown = 0;
+    if ((game = toy_object(scene, 0xd212e0))) shown = rabbit_frame(game, &frame);
+    else if ((game = toy_object(scene, 0xd0dce0))) shown = board_frame(game, &frame);
+    if (!game) return 0;
+    if (!shown) { walk.goal = 0; return 0; }
+    frame.token = ss_pointer_publish(&frame);
+    trace_frame(&frame);
+    reset_gesture(frame.token);
+    toy_walk(&frame);
+    ss_pointer_event event;
+    while (ss_pointer_take(frame.token, &event)) {
+        ss_pointer_action action = ss_pointer_track(&gesture, event);
+        if (!(action.flags & SS_POINTER_TAP)) continue;
+        int hit = ss_pointer_hit(&frame, action.x, action.y);
+        if (hit < 0 || (frame.targets[hit].flags & SS_POINTER_BUTTON)) continue;
+        const ss_pointer_target *item = &frame.targets[hit];
+        if ((item->flags & SS_POINTER_SELECTED) && item->id >> 8 != TOY_PAGE) {
+            ss_touch_press(1ull << PAD_A);
+            walk.goal = 0;
+        } else {
+            walk = (struct walk_state){.owner = frame.owner, .goal = item->id};
+            toy_walk(&frame);
+        }
+        if (trace) LOG("POINTER toy %s %llu", walk.goal ? "walk to" : "confirm", (unsigned long long)item->id);
+    }
+    return 1;
+}
 static void publish_hints(void *scene) {
     if (pause_input(scene)) return;
+    if (toy_input(scene)) return;
     if (ss_touch_layout(ss_touch_left_get()) == SS_TOUCH_MENU) return;
     void *info = ptr(scene, 0x9408);
     if (!sprite(info)) return;
