@@ -133,8 +133,24 @@ static void updateInput(void) {
     ss_input_set(mask | touchButtons | zoneButtons | pointerButtons, x, y);
 }
 
+/* The outline of a touch button. The user's sketch of 2026-10-23 makes ZL and ZR slanted and R a diamond. */
+typedef NS_ENUM(NSInteger, PadShape) { PadShapeRound, PadShapeLeanLeft, PadShapeLeanRight, PadShapeDiamond };
+
+/* The transform that gives a rounded rectangle of glass the outline of the shape. ZL leans like a
+   backslash and ZR like a slash (a shear). R is a square turned 45 degrees. */
+static CGAffineTransform padShapeTransform(PadShape shape, CGSize size) {
+    CGFloat lean = size.height > 0 ? 0.22 * size.width / size.height : 0;
+    if (shape == PadShapeLeanLeft) return CGAffineTransformMake(1, 0, lean, 1, 0, 0);
+    if (shape == PadShapeLeanRight) return CGAffineTransformMake(1, 0, -lean, 1, 0, 0);
+    if (shape == PadShapeDiamond) return CGAffineTransformMakeRotation(M_PI_4);
+    return CGAffineTransformIdentity;
+}
+
 @interface PadButton : UIButton
 @property(nonatomic) uint64_t bit;
+@property(nonatomic) PadShape shape;   /* a transform gives the glass this outline */
+@property(nonatomic, strong) UILabel *caption;   /* the upright title of a shaped button */
+@property(nonatomic, strong) UIImageView *captionImage;   /* the upright symbol of a shaped button */
 @property(nonatomic) BOOL appearanceHidden;   /* no look; the button still takes touches */
 @property(nonatomic) BOOL faded;              /* an unused direction: an outline without glass */
 @property(nonatomic) CGFloat hitMargin;   /* round touch area outside the button; 0 keeps the frame */
@@ -149,6 +165,49 @@ static void updateInput(void) {
 @property(nonatomic) CGRect homeFrame, mapFrame;   /* the frames in the pad and on the zoomed map */
 @end
 @implementation PadButton
+/* Place the button with its shape. A transformed view takes its place from bounds and center. */
+- (void)placeAt:(CGPoint)center size:(CGSize)size {
+    self.transform = CGAffineTransformIdentity;
+    self.bounds = (CGRect){CGPointZero, size};
+    self.center = center;
+    self.transform = padShapeTransform(self.shape, size);
+    [self setNeedsLayout];
+}
+/* The title of a shaped button stays upright: the caption undoes the button transform. */
+- (void)setCaptionText:(NSString *)text font:(UIFont *)font {
+    if (!self.caption) {
+        self.caption = [UILabel new];
+        self.caption.userInteractionEnabled = NO;
+        self.caption.textColor = UIColor.whiteColor;
+        self.caption.textAlignment = NSTextAlignmentCenter;
+        [self addSubview:self.caption];
+    }
+    self.caption.text = text;
+    self.caption.font = font;
+    [self setNeedsLayout];
+}
+- (void)setCaptionSymbol:(UIImage *)image {
+    if (!self.captionImage) {
+        self.captionImage = [UIImageView new];
+        self.captionImage.userInteractionEnabled = NO;
+        self.captionImage.tintColor = UIColor.whiteColor;
+        self.captionImage.contentMode = UIViewContentModeCenter;
+        [self addSubview:self.captionImage];
+    }
+    self.captionImage.image = image;
+    [self setNeedsLayout];
+}
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    for (UIView *view in @[self.caption ?: (id)NSNull.null, self.captionImage ?: (id)NSNull.null]) {
+        if (![view isKindOfClass:UIView.class]) continue;
+        [self bringSubviewToFront:view];
+        view.transform = CGAffineTransformIdentity;
+        [view sizeToFit];
+        view.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+        view.transform = CGAffineTransformInvert(self.transform);
+    }
+}
 /* A touch stays with the button where it started. That button stays pressed until the finger lifts.
    A slide also presses another sliding button when the finger enters its touch area, and releases the
    button of the previous slide. The touch areas do not overlap, so the touch holds the first button and
@@ -207,11 +266,21 @@ static void updateInput(void) {
     [self releaseSlide];
     if (self.untracked) self.highlighted = NO;
     else [super touchesEnded:touches withEvent:event];
+    [self endPressLook];
 }
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [self releaseSlide];
     if (self.untracked) self.highlighted = NO;
     else [super touchesCancelled:touches withEvent:event];
+    [self endPressLook];
+}
+/* The system glass press response fades out over about 0.2 seconds after the release. A new glass
+   background ends it at once (user request on 2026-10-23: a faster button response). */
+- (void)endPressLook {
+    if (!self.configuration) return;
+    UIButtonConfiguration *config = self.configuration;
+    self.configuration = nil;
+    self.configuration = config;
 }
 /* The mark of a button that a slide holds: a white fill, as bright as the lit D-pad arm (DPAD_LIT_FILL). */
 - (void)showSlideMark:(BOOL)shown {
@@ -222,7 +291,8 @@ static void updateInput(void) {
         [self addSubview:self.slideMark];
     }
     self.slideMark.frame = self.bounds;
-    self.slideMark.layer.cornerRadius = self.bounds.size.width / 2;
+    /* A circle or a capsule. A shaped button has a rounded rectangle, which its transform shapes like the button. */
+    self.slideMark.layer.cornerRadius = self.shape == PadShapeRound ? fmin(self.bounds.size.width, self.bounds.size.height) / 2 : 10;
     self.slideMark.hidden = !shown;
 }
 /* The touch area is the drawn circle or capsule, widened by hitMargin on each side. */
@@ -947,7 +1017,14 @@ static void *runGame(void *unused) {
         button.bit = 1ull << bits[i];
         setGlassButton(button, glassButtonConfiguration());   /* the Switch title follows the layout size */
         button.accessibilityLabel = names[i];
-        button.slides = !self.rhythmLayout && i < 4;   /* A, B, X, Y */
+        button.slides = !self.rhythmLayout && (i < 4 || i == SS_PAD_ZR);   /* A, B, X, Y, and ZR */
+        if (!self.rhythmLayout && (i == SS_PAD_ZL || i == SS_PAD_ZR || i == SS_PAD_R || i == SS_PAD_L)) {
+            button.shape = i == SS_PAD_ZL ? PadShapeLeanLeft : i == SS_PAD_ZR ? PadShapeLeanRight : PadShapeDiamond;
+            UIButtonConfiguration *config = button.configuration;   /* a rounded rectangle of glass */
+            config.cornerStyle = UIButtonConfigurationCornerStyleFixed;
+            config.background.cornerRadius = 10;
+            button.configuration = config;
+        }
         if (self.rhythmLayout) {
             button.look = rhythmGlassConfiguration(names[i], i < 4 ? arrows[i] : nil);
             button.appearanceHidden = i < 4;
@@ -1188,9 +1265,13 @@ static void *runGame(void *unused) {
     [views addObjectsFromArray:self.buttons];
     for (UIView *view in views) {
         BOOL glass = ![view isKindOfClass:PadButton.class] || ((PadButton *)view).glassShown;
-        if (!view.hidden && glass) {   /* a circle or a capsule */
-            CGFloat radius = fmin(view.frame.size.width, view.frame.size.height) / 2;
-            CGPathAddRoundedRect(path, NULL, view.frame, radius, radius);
+        if (!view.hidden && glass) {   /* a circle, a capsule, or the transformed rectangle of a shaped button */
+            BOOL shaped = [view isKindOfClass:PadButton.class] && ((PadButton *)view).shape != PadShapeRound;
+            CGSize size = view.bounds.size;
+            CGFloat radius = shaped ? 10 : fmin(size.width, size.height) / 2;
+            CGAffineTransform place = CGAffineTransformMakeTranslation(view.center.x, view.center.y);
+            place = CGAffineTransformConcat(CGAffineTransformTranslate(view.transform, -size.width / 2, -size.height / 2), place);
+            CGPathAddRoundedRect(path, &place, view.bounds, radius, radius);
         }
     }
     if (!CGPathEqualToPath(path, self.dimming.path)) {
@@ -1284,8 +1365,10 @@ static void *runGame(void *unused) {
     for (NSUInteger i = 0; i < self.buttons.count && i < SS_PAD_BUTTONS; ++i) {
         ss_pad_circle c = pad.buttons[i];
         PadButton *button = self.buttons[i];
-        CGFloat w = ss_pad_width(c);   /* ZL, L, R, and ZR are capsules */
-        button.frame = CGRectMake(c.x - w / 2, c.y - c.size / 2, w, c.size);
+        CGFloat w = ss_pad_width(c), h = c.size;   /* capsules and circles; ZL, ZR, and R are shaped */
+        if (button.shape == PadShapeDiamond) w = h = c.size / M_SQRT2;   /* the layout circle is around the diamond */
+        if (button.shape != PadShapeRound) [button placeAt:CGPointMake(c.x, c.y) size:CGSizeMake(w, h)];
+        else button.frame = CGRectMake(c.x - w / 2, c.y - h / 2, w, h);
         /* The zoomed map moves Y above A at the left edge, and X above B at the right edge. The edges
            are those of − and +. A and B keep the height of B. The upper button is just clear of the
            lower button's touch area. */
@@ -1301,7 +1384,17 @@ static void *runGame(void *unused) {
         button.hitMargin = pad.hit_margin;
         if (titleSize != self.titleSize) {
             UIButtonConfiguration *config = button.configuration;
-            config.attributedTitle = [[NSAttributedString alloc] initWithString:button.accessibilityLabel attributes:@{NSFontAttributeName: font}];
+            if (i == SS_PAD_L) {   /* L opens the map. It shows an upright map symbol in its diamond. */
+                config.attributedTitle = nil;
+                config.image = nil;
+                UIImageSymbolConfiguration *symbol = [UIImageSymbolConfiguration configurationWithPointSize:titleSize * 0.85 weight:UIImageSymbolWeightSemibold];
+                [button setCaptionSymbol:[UIImage systemImageNamed:@"map.fill" withConfiguration:symbol]];
+            } else if (button.shape != PadShapeRound) {   /* the caption keeps the title upright */
+                config.attributedTitle = nil;
+                [button setCaptionText:button.accessibilityLabel font:font];
+            } else {
+                config.attributedTitle = [[NSAttributedString alloc] initWithString:button.accessibilityLabel attributes:@{NSFontAttributeName: font}];
+            }
             button.configuration = config;
         }
     }

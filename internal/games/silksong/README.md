@@ -1,5 +1,38 @@
 **Silksong Switch → iPhone / iPad port workspace**
 
+
+
+
+
+## 2026-10-23: Controls nearer the side edges, and a faster press response (build 32)
+
+User request: "Move the virtual buttons closer to the left and right edges. Make button interaction animation faster".
+
+- `internal/platform/ios/TouchLayout.h`: on a phone the controls start at the edge of the safe area (12 points inside it before); on a tablet 8 points from it (16 before). iPhone 16 Pro Max: D-pad 12 points left, right group 8 points right.
+- `internal/platform/ios/App.m`: the glass press look ends at once when the finger lifts (0.02 s instead of 0.20 s, measured from screen recordings). Layer speed did not affect the system glass response. This applies to the glass buttons of both games.
+- See [the edges and press record](../../../.touchable/work/silksong/reports/edges-fast-press-20261023/README.md).
+- Build 32 (`IPA/silksong/Silksong-build32-20261023-141808-0d65ac.ipa`) is installed on the iPhone and the iPad mini. It also has the map button aligned with R. The launcher backed up the saves before each install. No game test on a device yet.
+
+## 2026-10-23: Right-side layout from the user's sketch (source change, no build)
+
+User request: "I want a layout looks like this" with a sketch. ZL and ZR are slanted buttons below and outside the X, Y, A, B diamond, lower than B. R is a diamond shape above and right of A. After "Make map button also diamond", the map button (L) below + is a diamond too, and it has the horizontal center of R ("Align horizontal center of Map button and R button"). A shear or rotation transform shapes the glass, and the titles stay upright. The diamond moves left 18 points on the iPhone 16 Pro Max so that ZR fits. This replaces the earlier ZL and ZR beside B and the round R. Layout test (11 sizes) and iOS Simulator tests passed. See [the sketch layout record](../../../.touchable/work/silksong/reports/sketch-layout-20261023/README.md).
+
+## 2026-10-23: ZR slides like the face buttons (source change, no build)
+
+User request: "Make ZR button also slideable: when pressing ZR, it can slide to other buttons".
+
+- `internal/platform/ios/App.m`: ZR is a sliding button. ZR stays pressed until the finger lifts, and a slide onto A, B, X, or Y also presses that button. A slide from a face button onto ZR presses ZR. The slide mark has the capsule shape of ZR.
+- Real-touch iOS Simulator test: ZR → B → A → ZR gives ZR, B+ZR, A+ZR, ZR, and none at the lift. See [the ZR slide record](../../../.touchable/work/silksong/reports/zr-slide-20261023/README.md).
+
+## 2026-10-23: L is a round map button below +; ZL and ZR below ABXY; R on the right (source change, no build)
+
+User request: "Move L button to most right side, below + button. Use a round shape. Use a map icon".
+
+- `internal/platform/ios/TouchLayout.h`: L is a round button of the size of +, below + at the right edge. A phone up to 390 points of usable height puts it next to +. The pad toggle moved into the row of +, left of + and L.
+- `internal/platform/ios/App.m`: L shows the SF Symbol `map.fill`.
+- Follow-up requests "Move ZL to right side, to the lower left of Y and B", then "Slightly move AXBY panel up and Move ZL and ZR to bottom of ABXY, use capsule shape. Move R button to right side.": ZL and ZR are low capsules (34 points high on a phone, after "make ZL and ZR button height lower") beside B, in its row (after "Make ZL and ZR besides B not below"). The diamond rises 12 points and moves left so that ZR fits: about 48 points on the iPhone 16 Pro Max, 53 points on the iPad mini. R is on the right, above A, and round after the follow-up "Use round shape for R". The D-pad does not move.
+- The layout test (11 sizes) and an iOS Simulator test passed. See [the L button record](../../../.touchable/work/silksong/reports/map-l-button-20261023/README.md).
+
 ## 2026-10-23: App name follows the language
 
 The home screen name now follows the language of the device. The names are the official titles from the game's `control.nacp` (`internal/tools/game_titles.py`), stored in `ios.display_names` in `game.json`.
