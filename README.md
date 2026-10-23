@@ -30,12 +30,20 @@ Every supported game gets these improvements:
 
 ## Exclusive Improvements
 
-| Game | ROM Version | Improvements |
-| -------- | ------------------------ | ------------------------------------------------------------ |
-| Rhythm Heaven | v0 (nsp) | Touch controls adapted to each level; fewer on-screen buttons that cover less of the picture; more intuitive play and feedback; tap-to-select Rhythm Toys; full virtual controller for Drum Lessons; TV or handheld mode from the audio output; ambient border glow |
-| Silksong | v0 (nsp) + v655360 (nsp) | Adaptive screen size; full resolution; 120 Hz on ProMotion screens |
+Select a game to see its improvements.
 
-See the [screenshots](SCREENSHOTS.md).
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/games/rhythm-heaven-groove.md"><img src="docs/assets/rhythm-heaven-level-stage.jpg" alt="Rhythm Heaven Groove"></a><br>
+      <a href="docs/games/rhythm-heaven-groove.md"><b>Rhythm Heaven Groove</b></a>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/games/silksong.md"><img src="docs/assets/silksong-gameplay.jpg" alt="Hollow Knight: Silksong"></a><br>
+      <a href="docs/games/silksong.md"><b>Hollow Knight: Silksong</b></a>
+    </td>
+  </tr>
+</table>
 
 ## Get started
 

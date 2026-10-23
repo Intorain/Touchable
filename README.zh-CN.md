@@ -30,12 +30,20 @@ Touchable 为移植游戏带来 **iOS 原生体验**，优化触摸操作、虚�
 
 ## 专属改进
 
-| 游戏     | ROM 版本                 | 优化改进                                                     |
-| -------- | ------------------------ | ------------------------------------------------------------ |
-| 节奏天国 | v0 (nsp)                 | 触摸操作适配每个关卡；更少的屏幕按键，减少画面遮挡；更直觉的游玩方式和反馈；节奏玩具点选操作；鼓乐课完整虚拟手柄；按音频输出自动切换电视或掌机模式；环境光黑边 |
-| 丝之歌   | v0 (nsp) + v655360 (nsp) | 自适应屏幕尺寸；全分辨率；ProMotion 屏幕 120Hz |
+点击游戏查看它的专属改进。
 
-查看[游戏截图](SCREENSHOTS.md)。
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/games/rhythm-heaven-groove.zh-CN.md"><img src="docs/assets/rhythm-heaven-level-stage.jpg" alt="节奏天国 奇迹之星"></a><br>
+      <a href="docs/games/rhythm-heaven-groove.zh-CN.md"><b>节奏天国 奇迹之星</b></a>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/games/silksong.zh-CN.md"><img src="docs/assets/silksong-gameplay.jpg" alt="空洞骑士 丝之歌"></a><br>
+      <a href="docs/games/silksong.zh-CN.md"><b>空洞骑士 丝之歌</b></a>
+    </td>
+  </tr>
+</table>
 
 ## 开始使用
 
