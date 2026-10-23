@@ -30,7 +30,7 @@ Every supported game gets these improvements:
 
 ## Exclusive Improvements
 
-| Game | Game file version | Improvements |
+| Game | ROM Version | Improvements |
 | -------- | ------------------------ | ------------------------------------------------------------ |
 | Rhythm Heaven | v0 (nsp) | Touch controls adapted to each level; fewer on-screen buttons that cover less of the picture; more intuitive play and feedback; tap-to-select Rhythm Toys; full virtual controller for Drum Lessons; TV or handheld mode from the audio output; ambient border glow |
 | Silksong | v0 (nsp) + v655360 (nsp) | Adaptive screen size; full resolution; 120 Hz on ProMotion screens |
@@ -66,6 +66,12 @@ This project is based on [d2r-mobile](https://github.com/jhaizhou-ops/d2r-mobile
 ## Community
 
 Join the [Discord server](https://discord.gg/AKhWUYNKg7) to ask questions, report problems, and share feedback.
+
+## Credits
+
+If you use or adapt Touchable's touch control design in your own project, please credit **mzhao** and link to [this repository](https://github.com/MZhao-ouo/Touchable).
+The design includes the Liquid Glass virtual controller, the per-level touch areas, sliding between buttons, and the direct-touch menus.
+To cite the project, use **Cite this repository** on GitHub, or see [CITATION.cff](CITATION.cff).
 
 ## License and disclaimer
 
