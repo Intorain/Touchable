@@ -1,6 +1,19 @@
-# Touchable
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Touchable logo" width="128">
+</p>
 
-[English](README.md) | **简体中文**
+<h1 align="center">Touchable</h1>
+
+<p align="center"><i>为你自己的 Switch 游戏带来 iOS 原生体验</i></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-26%2B-000000?logo=apple&logoColor=white" alt="iOS and iPadOS 26+">
+  <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-000000?logo=apple&logoColor=white" alt="Apple Silicon Mac">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-e60012" alt="MIT License"></a>
+  <a href="https://discord.gg/AKhWUYNKg7"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Join the Discord server"></a>
+</p>
+
+<p align="center"><a href="README.md">English</a> | <b>简体中文</b></p>
 
 Touchable 为移植游戏带来 **iOS 原生体验**，优化触摸操作、虚拟按键、画面和性能。**请使用你自己的 Switch 游戏文件**，在 Apple Silicon Mac 上构建 iPhone 和 iPad 原生游戏。
 
@@ -50,6 +63,10 @@ Touchable 为移植游戏带来 **iOS 原生体验**，优化触摸操作、虚�
 开发前请阅读 [AGENTS.md](AGENTS.md)。
 详细文档和启动器界面使用英文。
 本项目基于 [d2r-mobile](https://github.com/jhaizhou-ops/d2r-mobile)。
+
+## 社区
+
+加入 [Discord 服务器](https://discord.gg/AKhWUYNKg7)，提问、反馈问题或分享建议。
 
 ## 许可和声明
 

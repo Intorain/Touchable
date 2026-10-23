@@ -1,6 +1,19 @@
-# Touchable
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Touchable logo" width="128">
+</p>
 
-**English** | [简体中文](README.zh-CN.md)
+<h1 align="center">Touchable</h1>
+
+<p align="center"><i>Native iOS experience for your own Switch games</i></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/iOS%20%7C%20iPadOS-26%2B-000000?logo=apple&logoColor=white" alt="iOS and iPadOS 26+">
+  <img src="https://img.shields.io/badge/Mac-Apple%20Silicon-000000?logo=apple&logoColor=white" alt="Apple Silicon Mac">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-e60012" alt="MIT License"></a>
+  <a href="https://discord.gg/AKhWUYNKg7"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Join the Discord server"></a>
+</p>
+
+<p align="center"><b>English</b> | <a href="README.zh-CN.md">简体中文</a></p>
 
 Touchable brings ported games a **native iOS experience**, with better touch controls, virtual buttons, graphics, and performance. **Bring your own Switch game files**, and build native iPhone and iPad games on an Apple Silicon Mac.
 
@@ -49,6 +62,10 @@ For install steps, see [Signing and installation](docs/signing-and-install.md).
 If an error occurs, first read [Troubleshooting](docs/troubleshooting.md).
 Before development, read [AGENTS.md](AGENTS.md).
 This project is based on [d2r-mobile](https://github.com/jhaizhou-ops/d2r-mobile).
+
+## Community
+
+Join the [Discord server](https://discord.gg/AKhWUYNKg7) to ask questions, report problems, and share feedback.
 
 ## License and disclaimer
 
