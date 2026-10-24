@@ -378,10 +378,22 @@ static void map_pan(void *scene, float dx) {
     put_real(scene, 0x52b4, 0); put_real(scene, 0x52b8, 0); put_real(scene, 0x52bc, 1);
     ((void (*)(void *, float, float))(base + 0x4fe260))((uint8_t *)stage + 8, x, real(stage, 0x1c));
 }
+/* The native map command handler (main+0x1d1560) moves the map only in input state 1 and uses the
+   selector in state 2. Other states, for example an unlock transition, ignore input. A touch there
+   could change the selection that the unlock routine then uses (issue #2). */
 static void map_input(void *scene) {
-    if (integer(scene, 0x5288) == 2) {
-        void *selector = ptr(scene, 0x6d68);
-        if (selector) selector_input(selector, ptr(selector, 0x18), scene);
+    int state = integer(scene, 0x5288);
+    if (!rh_map_input_ready(state)) {
+        void *selector = state == 2 ? ptr(scene, 0x6d68) : NULL;
+        if (!selector || !selector_input(selector, ptr(selector, 0x18), scene)) {
+            /* An empty menu frame takes the touches, so no fallback button acts. Drop them. */
+            ss_pointer_frame blocked = {.owner = (uintptr_t)scene, .mode = SS_POINTER_MENU};
+            blocked.token = ss_pointer_publish(&blocked);
+            gesture = (ss_pointer_gesture){0};
+            can_drag = 0;
+            ss_pointer_event ignored;
+            while (ss_pointer_take(blocked.token, &ignored)) {}
+        }
         ((void (*)(void *))(base + 0x1d1410))(scene);
         return;
     }

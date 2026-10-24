@@ -1,5 +1,13 @@
 # Rhythm Heaven
 
+## 2026-10-24: Map input guard during unlock transitions
+
+From pull request #9 by SDR (issue #2: a stage was not unlocked and the next remix was unlocked instead). The core guard was applied on top of the select-then-confirm map.
+- The native map command handler (`main+0x1d1560`) moves the map only in input state 1 (`scene+0x5288`) and uses the selector in state 2. Other states, for example an unlock transition, ignore input. The touch adapter did not check this, so a tap could change the selection that the unlock routine then used.
+- `runtime/rh_menu.c`: map selection, entry, and dragging run only in state 1 (`rh_map_input_ready()`). State 2 keeps the selector touch path. Otherwise the adapter publishes an empty menu frame, resets the gesture, and drops queued touches; the native map function still runs.
+- The PR author reproduced a wrong unlock target in a controlled ARM64 emulation and saw the guard prevent it. That is emulation evidence, not a device reproduction. The change does not repair progress already saved in the wrong state.
+- Checks: `test_menu` (state 1 accepted; 0, 2, −1, 3, 99, `INT_MIN`, and `INT_MAX` blocked) and the Mac host build passed. Mac host test on the cafe-fixed save: the map dragged, a tap on the selected Remix 8 opened its selector, and a tap on "常规游玩" in the selector started the remix. A tap during a real unlock transition was not tested. Not built for iOS.
+
 ## 2026-10-23: Select, then confirm on the level map (build 40)
 
 User request: change every double-tap confirm to select-then-confirm.
